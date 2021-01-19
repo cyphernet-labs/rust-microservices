@@ -22,7 +22,7 @@ use settings::ConfigError;
 use tokio::task::JoinError;
 
 #[cfg(any(feature = "node", feature = "shell"))]
-use internet2::lnp;
+use internet2::transport;
 
 #[cfg(feature = "node")]
 use crate::rpc;
@@ -102,7 +102,7 @@ where
     /// Error connecting to LNP service:
     /// {0}
     #[from]
-    Transport(lnp::transport::Error),
+    Transport(transport::Error),
 
     /// Application-level error:
     /// {0}

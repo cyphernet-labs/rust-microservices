@@ -19,7 +19,7 @@ pub mod server;
 use std::fmt::{Debug, Display};
 use std::hash::Hash;
 
-use internet2::lnp;
+use internet2::{presentation, transport};
 
 #[cfg(feature = "node")]
 use crate::error::RuntimeError;
@@ -53,12 +53,12 @@ pub enum Error {
     ServerFailure(Failure),
 
     /// message serialization or structure error: {0}
-    #[from(lnp::presentation::encoding::Error)]
-    Presentation(lnp::presentation::Error),
+    #[from(presentation::encoding::Error)]
+    Presentation(presentation::Error),
 
     /// transport-level protocol error: {0}
     #[from]
-    Transport(lnp::transport::Error),
+    Transport(transport::Error),
 
     /// provided RPC endpoint {0} is unknown
     UnknownEndpoint(String),
@@ -66,21 +66,21 @@ pub enum Error {
 
 impl From<zmq::Error> for Error {
     fn from(err: zmq::Error) -> Self {
-        Error::Transport(lnp::transport::Error::from(err))
+        Error::Transport(transport::Error::from(err))
     }
 }
 
-impl From<lnp::presentation::Error> for Error {
-    fn from(err: lnp::presentation::Error) -> Self {
+impl From<presentation::Error> for Error {
+    fn from(err: presentation::Error) -> Self {
         match err {
-            lnp::presentation::Error::Transport(err) => err.into(),
+            presentation::Error::Transport(err) => err.into(),
             err => Error::Presentation(err),
         }
     }
 }
 
-impl From<lnp::presentation::Error> for Failure {
-    fn from(err: lnp::presentation::Error) -> Self {
+impl From<presentation::Error> for Failure {
+    fn from(err: presentation::Error) -> Self {
         Failure {
             info: err.to_string(),
             code: u8::from(err) as u16,

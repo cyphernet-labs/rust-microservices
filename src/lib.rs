@@ -30,8 +30,8 @@
 extern crate amplify;
 #[macro_use]
 extern crate amplify_derive;
-#[cfg_attr(any(feature = "client", feature = "node"), macro_use)]
-extern crate internet2_derive;
+#[macro_use]
+extern crate strict_encoding;
 
 #[cfg(feature = "serde")]
 extern crate serde_crate as serde;

@@ -17,7 +17,7 @@ pub use controller::{Controller, Handler, SenderList};
 use std::fmt::{Debug, Display};
 use std::hash::Hash;
 
-use internet2::lnp::{presentation, transport, zmqsocket};
+use internet2::{presentation, transport, zmqsocket};
 
 /// Marker traits for service bus identifiers
 pub trait BusId: Copy + Eq + Hash + Display {}
