@@ -16,47 +16,6 @@ jobs:
       fail-fast: false
       matrix:
         feature:
-          # Library components, one by one
-          - lnp
-          # Cryptographic optionals
-          - keygen
-          - elgamal
-          - bulletproofs
-          - ed25519-dalek
-          # Core rust optionals
-          - serde
-          - tokio
-          - async
-          # Networking
-          - url
-          - websockets
-          # Full LNP strength, but without Serde
-          - lnp,websockets,url,tokio,async,keygen,bulletproofs,ed25519-dalek
-    steps:
-      - uses: actions/checkout@v2
-      - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y libzmq3-dev
-      - name: Install rust stable
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-      - name: Feature ${{ matrix.feature }}
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
-          args: --no-default-features --features=${{ matrix.feature }}
-      - name: Defaults + ${{ matrix.feature }}
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
-          args: --features=${{ matrix.feature }}
-  services:
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        feature:
           - server
           - client
           - embedded
@@ -76,7 +35,12 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: check
-          args: --manifest-path services/Cargo.toml --features=${{ matrix.feature }}
+          args: --no-default-features --features=${{ matrix.feature }}
+      - name: Defaults + ${{ matrix.feature }}
+        uses: actions-rs/cargo@v1
+        with:
+          command: check
+          args: --features=${{ matrix.feature }}
   platforms:
     runs-on: ${{ matrix.os }}
     strategy:
