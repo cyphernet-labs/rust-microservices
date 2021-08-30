@@ -18,8 +18,8 @@ crate-type = ["rlib", "staticlib"]
 [dependencies]
 # LNP/BP libraries
 amplify = "3.9.1"
-lnp-core = { version = "0.3.1", optional = true }
-internet2 = { version = "0.5.0-alpha.1", default-features = false, features = ["derive"], path = ".."}
+lnp-core = { version = "0.4.0-beta.1", optional = true }
+internet2 = { version = "0.5.0-alpha.1", default-features = false, features = ["derive"] }
 lightning_encoding = "0.5.0-beta.1"
 strict_encoding = { version = "1", default-features = false, features = ["derive"] }
 # Serialization & parsing
@@ -70,4 +70,3 @@ serde = ["serde_crate", "serde_with", "amplify/serde", "internet2/serde", "toml"
 peer = ["lnp-core", "node"]
 zmq = ["zmq_crate", "internet2/zmq"]
 tor = ["internet2/tor"]
-vendored_openssl = ["internet2/vendored_openssl"]

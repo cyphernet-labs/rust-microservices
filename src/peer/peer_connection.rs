@@ -110,7 +110,7 @@ impl SendMessage for PeerConnection {
         message: impl LightningEncode + Display,
     ) -> Result<usize, Error> {
         debug!("Sending LN message to the remote peer: {}", message);
-        let data = &message.lightning_serialize();
+        let data = &message.lightning_serialize()?;
         trace!("Lightning-encoded message representation: {:?}", data);
         Ok(self.session.send_raw_message(data)?)
     }
@@ -138,7 +138,7 @@ impl SendMessage for PeerSender {
         message: impl LightningEncode + Display,
     ) -> Result<usize, Error> {
         debug!("Sending LN message to the remote peer: {}", message);
-        let data = &message.lightning_serialize();
+        let data = &message.lightning_serialize()?;
         trace!("Lightning-encoded message representation: {:?}", data);
         Ok(self.sender.send_raw_message(data)?)
     }

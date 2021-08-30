@@ -32,17 +32,17 @@ pub trait TryService: Sized {
     /// failure. To implement the actual run loop please provide implementation
     /// for [`try_run_loop()`]
     fn run_or_panic(self, service_name: &str) {
-        panic!(match self.try_run_loop() {
+        match self.try_run_loop() {
             Err(err) => {
-                format!(
+                panic!(
                     "{} run loop has failed with error {}",
                     service_name, err
                 )
             }
             Ok(_) => {
-                format!("{} has failed without reporting a error", service_name)
+                panic!("{} has failed without reporting a error", service_name)
             }
-        })
+        }
     }
 
     /// Main failable run loop implementation. Must produce an error of type
