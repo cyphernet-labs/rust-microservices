@@ -32,7 +32,7 @@ pub struct FormatParseError;
     StrictEncode,
     StrictDecode,
 )]
-#[cfg_attr(feature = "clap", derive(Clap))]
+#[cfg_attr(feature = "clap", derive(ArgEnum))]
 #[cfg_attr(
     feature = "serde",
     derive(Serialize, Deserialize),
@@ -94,7 +94,7 @@ impl FromStr for BinaryFormat {
     StrictEncode,
     StrictDecode,
 )]
-#[cfg_attr(feature = "clap", derive(Clap))]
+#[cfg_attr(feature = "clap", derive(ArgEnum))]
 #[cfg_attr(
     feature = "serde",
     derive(Serialize, Deserialize),
@@ -166,7 +166,7 @@ impl FromStr for StructuredFormat {
     StrictEncode,
     StrictDecode,
 )]
-#[cfg_attr(feature = "clap", derive(Clap))]
+#[cfg_attr(feature = "clap", derive(ArgEnum))]
 #[cfg_attr(
     feature = "serde",
     derive(Serialize, Deserialize),
