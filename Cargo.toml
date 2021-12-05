@@ -1,6 +1,6 @@
 [package]
 name = "microservices"
-version = "0.5.0"
+version = "0.5.2"
 license = "Apache-2.0"
 authors = ["Dr Maxim Orlovsky <orlovsky@pandoracore.com>"]
 description = "LNP/BP support crate for devloping microservices"
@@ -18,7 +18,7 @@ crate-type = ["rlib", "staticlib"]
 [dependencies]
 # LNP/BP libraries
 amplify = "3.9.1"
-internet2 = { version = "0.5.0", default-features = false, features = ["derive"] }
+internet2 = { version = "0.5.2", default-features = false, features = ["derive"] }
 lightning_encoding = "0.5.0"
 strict_encoding = { version = "1.7.4", default-features = false, features = ["derive"] }
 # Serialization & parsing
@@ -66,6 +66,6 @@ _config = []
 _rpc = []
 
 serde = ["serde_crate", "serde_with", "amplify/serde", "internet2/serde", "toml"]
-peer = ["node"]
+peer = ["node", "internet2/keygen"]
 zmq = ["zmq_crate", "internet2/zmq"]
 tor = ["internet2/tor"]

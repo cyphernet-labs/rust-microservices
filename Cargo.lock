@@ -131,7 +131,6 @@ dependencies = [
  "bech32",
  "bitcoin_hashes",
  "secp256k1",
- "serde 1.0.130",
 ]
 
 [[package]]
@@ -677,17 +676,18 @@ dependencies = [
 
 [[package]]
 name = "internet2"
-version = "0.5.0"
+version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5f18bcfe6603b718d1f81deb4a5a6256abbb57a8c2d1048a3aaa68f623b01da5"
+checksum = "282e1a0d44ccc509a1e4faf183e177c9de5c325ccf2639bdee25c253a404116f"
 dependencies = [
  "amplify",
- "bitcoin",
+ "bitcoin_hashes",
  "chacha20poly1305",
  "inet2_addr",
  "inet2_derive",
  "lazy_static",
  "lightning_encoding",
+ "secp256k1",
  "serde 1.0.130",
  "serde_with",
  "strict_encoding",
@@ -841,7 +841,7 @@ dependencies = [
 
 [[package]]
 name = "microservices"
-version = "0.5.0"
+version = "0.5.2"
 dependencies = [
  "amplify",
  "clap",
