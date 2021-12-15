@@ -20,7 +20,10 @@ use std::hash::Hash;
 use internet2::{presentation, transport, zmqsocket};
 
 /// Marker traits for service bus identifiers
-pub trait BusId: Copy + Eq + Hash + Display {}
+pub trait BusId: Copy + Eq + Hash + Display {
+    /// Service address type used by this bus
+    type Address: ServiceAddress;
+}
 
 pub struct BusConfig<A>
 where
@@ -66,7 +69,7 @@ pub trait ServiceAddress:
 /// Errors happening with RPC APIs
 #[derive(Clone, Debug, Display, Error, From)]
 #[display(doc_comments)]
-pub enum Error {
+pub enum Error<A: ServiceAddress> {
     /// unexpected server response
     UnexpectedServerResponse,
 
@@ -74,9 +77,8 @@ pub enum Error {
     #[from(lightning_encoding::Error)]
     Presentation(presentation::Error),
 
-    // TODO: Parametrize error with ServiceAddress
-    /// error sending message to {0:?}. Details: {1}
-    Send(Vec<u8>, transport::Error),
+    /// error sending message from {0} to {1}. Details: {2}
+    Send(A, A, transport::Error),
 
     /// transport-level protocol error. Details: {0}
     #[from]
@@ -89,13 +91,13 @@ pub enum Error {
     ServiceError(String),
 }
 
-impl From<zmq::Error> for Error {
+impl<A: ServiceAddress> From<zmq::Error> for Error<A> {
     fn from(err: zmq::Error) -> Self {
         Error::Transport(transport::Error::from(err))
     }
 }
 
-impl From<presentation::Error> for Error {
+impl<A: ServiceAddress> From<presentation::Error> for Error<A> {
     fn from(err: presentation::Error) -> Self {
         match err {
             presentation::Error::Transport(err) => err.into(),

@@ -28,30 +28,29 @@ pub trait Handler<B>
 where
     Self: Sized,
     B: BusId,
-    Error: From<Self::Error>,
+    Error<B::Address>: From<Self::Error>,
 {
     type Request: Request;
-    type Address: ServiceAddress;
     type Error: std::error::Error;
 
-    fn identity(&self) -> Self::Address;
+    fn identity(&self) -> B::Address;
 
     fn on_ready(
         &mut self,
-        _senders: &mut SenderList<B, Self::Address>,
+        _senders: &mut SenderList<B>,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
 
     fn handle(
         &mut self,
-        senders: &mut SenderList<B, Self::Address>,
+        senders: &mut SenderList<B>,
         bus_id: B,
-        source: Self::Address,
+        source: B::Address,
         request: Self::Request,
     ) -> Result<(), Self::Error>;
 
-    fn handle_err(&mut self, senders: &mut SenderList<B, Self::Address>, error: Error) -> Result<(), Error>;
+    fn handle_err(&mut self, senders: &mut SenderList<B>, error: Error<B::Address>) -> Result<(), Error<B::Address>>;
 }
 
 struct Sender<A>
@@ -71,7 +70,7 @@ where
         source: A,
         dest: A,
         request: R,
-    ) -> Result<(), Error>
+    ) -> Result<(), Error<A>>
     where
         R: Request,
     {
@@ -106,26 +105,25 @@ where
                 router.clone()
             }
         };
-        let dest = dest.into();
+        let src = source.clone();
+        let dst = dest.clone();
         self.session.send_routed_message(
             &source.into(),
             &router.into(),
-            &dest,
+            &dest.into(),
             &data,
-        ).map_err(|err| Error::Send(dest, err))?;
+        ).map_err(|err| Error::Send(src, dst, err))?;
         Ok(())
     }
 }
 
-pub struct SenderList<B, A>(pub(self) HashMap<B, Sender<A>>)
+pub struct SenderList<B>(pub(self) HashMap<B, Sender<B::Address>>)
 where
-    B: BusId,
-    A: ServiceAddress;
+    B: BusId;
 
-impl<B, A> SenderList<B, A>
+impl<B> SenderList<B>
 where
     B: BusId,
-    A: ServiceAddress,
 {
     pub fn new() -> Self {
         Self(Default::default())
@@ -134,10 +132,10 @@ where
     pub fn send_to<R>(
         &mut self,
         bus_id: B,
-        source: A,
-        dest: A,
+        source: B::Address,
+        dest: B::Address,
         request: R,
-    ) -> Result<(), Error>
+    ) -> Result<(), Error<B::Address>>
     where
         R: Request,
     {
@@ -155,9 +153,9 @@ where
     R: Request,
     B: BusId,
     H: Handler<B, Request = R>,
-    Error: From<H::Error>,
+    Error<B::Address>: From<H::Error>,
 {
-    senders: SenderList<B, H::Address>,
+    senders: SenderList<B>,
     unmarshaller: Unmarshaller<R>,
     handler: H,
     api_type: zmqsocket::ZmqType,
@@ -168,13 +166,13 @@ where
     R: Request,
     B: BusId,
     H: Handler<B, Request = R>,
-    Error: From<H::Error>,
+    Error<B::Address>: From<H::Error>,
 {
     pub fn with(
-        service_bus: HashMap<B, BusConfig<H::Address>>,
+        service_bus: HashMap<B, BusConfig<B::Address>>,
         handler: H,
         api_type: zmqsocket::ZmqType,
-    ) -> Result<Self, Error> {
+    ) -> Result<Self, Error<B::Address>> {
         let senders = SenderList::new();
         let unmarshaller = R::create_unmarshaller();
         let mut me = Self {
@@ -192,8 +190,8 @@ where
     pub fn add_service_bus(
         &mut self,
         id: B,
-        config: BusConfig<H::Address>,
-    ) -> Result<(), Error> {
+        config: BusConfig<B::Address>,
+    ) -> Result<(), Error<B::Address>> {
         let session = match config.carrier {
             zmqsocket::Carrier::Locator(locator) => {
                 debug!(
@@ -229,16 +227,16 @@ where
     pub fn send_to(
         &mut self,
         bus_id: B,
-        dest: H::Address,
+        dest: B::Address,
         request: R,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Error<B::Address>> {
         self.senders
             .send_to(bus_id, self.handler.identity(), dest, request)
     }
 
     pub fn recv_poll(
         &mut self,
-    ) -> Result<Vec<(B, H::Address, H::Request)>, Error> {
+    ) -> Result<Vec<(B, B::Address, H::Request)>, Error<B::Address>> {
         let mut vec = vec![];
         for bus_id in self.poll()? {
             let sender = self
@@ -250,7 +248,7 @@ where
             let routed_frame = sender.session.recv_routed_message()?;
             let request =
                 (&*self.unmarshaller.unmarshall(&routed_frame.msg)?).clone();
-            let source = H::Address::from(routed_frame.src);
+            let source = B::Address::from(routed_frame.src);
 
             vec.push((bus_id, source, request));
         }
@@ -265,9 +263,9 @@ where
     R: Request,
     B: BusId,
     H: Handler<B, Request = R>,
-    Error: From<H::Error>,
+    Error<B::Address>: From<H::Error>,
 {
-    type ErrorType = Error;
+    type ErrorType = Error<B::Address>;
 
     fn try_run_loop(mut self) -> Result<(), Self::ErrorType> {
         self.handler.on_ready(&mut self.senders)?;
@@ -288,10 +286,10 @@ where
     R: Request,
     B: BusId,
     H: Handler<B, Request = R>,
-    Error: From<H::Error>,
+    Error<B::Address>: From<H::Error>,
 {
     #[cfg(feature = "node")]
-    fn run(&mut self) -> Result<(), Error> {
+    fn run(&mut self) -> Result<(), Error<B::Address>> {
         for bus_id in self.poll()? {
             let sender = self
                 .senders
@@ -302,8 +300,8 @@ where
             let routed_frame = sender.session.recv_routed_message()?;
             let request =
                 (&*self.unmarshaller.unmarshall(&routed_frame.msg)?).clone();
-            let source = H::Address::from(routed_frame.src);
-            let dest = H::Address::from(routed_frame.dst);
+            let source = B::Address::from(routed_frame.src);
+            let dest = B::Address::from(routed_frame.dst);
 
             if dest == self.handler.identity() {
                 // We are the destination
@@ -325,7 +323,7 @@ where
         Ok(())
     }
 
-    fn poll(&mut self) -> Result<Vec<B>, Error> {
+    fn poll(&mut self) -> Result<Vec<B>, Error<B::Address>> {
         let mut index = vec![];
         let mut items = self
             .senders

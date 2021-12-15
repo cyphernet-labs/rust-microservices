@@ -35,7 +35,7 @@ pub trait TryService: Sized {
         match self.try_run_loop() {
             Err(err) => {
                 panic!(
-                    "{} run loop has failed with error {}",
+                    "{} run loop has failed with {}",
                     service_name, err
                 )
             }
