@@ -70,11 +70,15 @@ pub enum Error {
     /// unexpected server response
     UnexpectedServerResponse,
 
-    /// message serialization or structure error: {0}
+    /// message serialization or structure error. Details: {0}
     #[from(lightning_encoding::Error)]
     Presentation(presentation::Error),
 
-    /// transport-level protocol error: {0}
+    // TODO: Parametrize error with ServiceAddress
+    /// error sending message to {0:?}. Details: {1}
+    Send(Vec<u8>, transport::Error),
+
+    /// transport-level protocol error. Details: {0}
     #[from]
     Transport(transport::Error),
 

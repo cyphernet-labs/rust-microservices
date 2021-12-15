@@ -106,12 +106,13 @@ where
                 router.clone()
             }
         };
+        let dest = dest.into();
         self.session.send_routed_message(
             &source.into(),
             &router.into(),
-            &dest.into(),
+            &dest,
             &data,
-        )?;
+        ).map_err(|err| Error::Send(dest, err))?;
         Ok(())
     }
 }
