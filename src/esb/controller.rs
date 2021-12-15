@@ -79,7 +79,7 @@ where
         let router = match self.router {
             None => {
                 trace!(
-                    "Routing: sending {} from {} to {} directly",
+                    "Sending {} from {} to {} directly",
                     request,
                     source,
                     dest,
@@ -88,7 +88,7 @@ where
             }
             Some(ref router) if &source == router => {
                 trace!(
-                    "Routing: sending {} from {} to {}",
+                    "Routing {} from {} to {}",
                     request,
                     source,
                     dest,
@@ -97,7 +97,7 @@ where
             }
             Some(ref router) => {
                 trace!(
-                    "Routing: sending {} from {} to {} via {}",
+                    "Sending {} from {} to {} via router {}",
                     request,
                     source,
                     dest,
