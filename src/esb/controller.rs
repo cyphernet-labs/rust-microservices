@@ -50,7 +50,7 @@ where
         request: Self::Request,
     ) -> Result<(), Self::Error>;
 
-    fn handle_err(&mut self, senders: &mut SenderList<B>, error: Error<B::Address>) -> Result<(), Error<B::Address>>;
+    fn handle_err(&mut self, senders: &mut SenderList<B>, error: Error<B::Address>) -> Result<(), Self::Error>;
 }
 
 struct Sender<A>
