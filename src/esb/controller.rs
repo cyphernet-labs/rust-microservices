@@ -51,7 +51,7 @@ where
         request: Self::Request,
     ) -> Result<(), Self::Error>;
 
-    fn handle_err(&mut self, error: Error) -> Result<(), Error>;
+    fn handle_err(&mut self, senders: &mut SenderList<B, Self::Address>, error: Error) -> Result<(), Error>;
 }
 
 struct Sender<A>
@@ -276,7 +276,7 @@ where
                 Ok(_) => trace!("request processing complete"),
                 Err(err) => {
                     error!("ESB request processing error: {}", err);
-                    self.handler.handle_err(err)?;
+                    self.handler.handle_err(&mut self.senders, err)?;
                 }
             }
         }
