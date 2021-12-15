@@ -272,7 +272,7 @@ where
         self.handler.on_ready(&mut self.senders)?;
         loop {
             match self.run() {
-                Ok(_) => debug!("ESB request processing complete"),
+                Ok(_) => trace!("request processing complete"),
                 Err(err) => {
                     error!("ESB request processing error: {}", err);
                     self.handler.handle_err(err)?;
@@ -306,10 +306,7 @@ where
 
             if dest == self.handler.identity() {
                 // We are the destination
-                debug!(
-                    "ESB request {} from {} forwarded to processing",
-                    request, source
-                );
+                debug!("{} -> {}: {}", source, dest, request);
 
                 self.handler.handle(
                     &mut self.senders,
@@ -319,11 +316,7 @@ where
                 )?;
             } else {
                 // Need to route
-                debug!(
-                    "ESB request {} will be routed from {} to {}",
-                    request, source, dest
-                );
-
+                trace!("Routing {} from {} to {}", request, source, dest);
                 self.senders.send_to(bus_id, source, dest, request)?
             }
         }
