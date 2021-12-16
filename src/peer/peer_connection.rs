@@ -20,8 +20,8 @@ use internet2::session::{
     self, Accept, Connect, LocalNode, PlainTranscoder, Session, Split,
     ToNodeAddr,
 };
-use internet2::transport::{ftcp, zmqsocket};
-use internet2::{LIGHTNING_P2P_DEFAULT_PORT, NoiseTranscoder};
+use internet2::transport::{brontide, zmqsocket};
+use internet2::{ftcp, LIGHTNING_P2P_DEFAULT_PORT, NoiseTranscoder};
 use lightning_encoding::LightningEncode;
 use std::fmt::Display;
 
@@ -165,10 +165,10 @@ impl Bipolar for PeerConnection {
                 );
             (*session).split()
         } else if let Some(_) = session
-            .downcast_ref::<session::Raw<NoiseTranscoder, ftcp::Connection>>()
+            .downcast_ref::<session::Raw<NoiseTranscoder, brontide::Connection>>()
         {
             let session = session
-                .downcast::<session::Raw<NoiseTranscoder, ftcp::Connection>>()
+                .downcast::<session::Raw<NoiseTranscoder, brontide::Connection>>()
                 .expect(
                     "Must not fail; we just ensured that with downcast_ref",
                 );
@@ -177,7 +177,7 @@ impl Bipolar for PeerConnection {
             .downcast_ref::<session::Raw<PlainTranscoder, zmqsocket::Connection>>()
         {
             let session = session
-                .downcast::<session::Raw<PlainTranscoder, ftcp::Connection>>()
+                .downcast::<session::Raw<PlainTranscoder, zmqsocket::Connection>>()
                 .expect(
                     "Must not fail; we just ensured that with downcast_ref",
                 );
