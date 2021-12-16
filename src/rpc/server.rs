@@ -12,6 +12,7 @@
 // If not, see <https://opensource.org/licenses/MIT>.
 
 use std::collections::HashMap;
+use std::io::Cursor;
 
 use internet2::transport::zmqsocket;
 use internet2::{
@@ -179,7 +180,7 @@ where
                 .expect("must exist, just indexed");
 
             let raw = session.recv_raw_message()?;
-            let request = &*self.unmarshaller.unmarshall(&raw)?;
+            let request = &*self.unmarshaller.unmarshall(Cursor::new(raw))?;
 
             debug!("RPC: got request {}", request);
             let reply = self

@@ -24,6 +24,7 @@ use internet2::transport::{brontide, zmqsocket};
 use internet2::{ftcp, LIGHTNING_P2P_DEFAULT_PORT, NoiseTranscoder};
 use lightning_encoding::LightningEncode;
 use std::fmt::Display;
+use std::io::Cursor;
 
 pub trait RecvMessage {
     fn recv_message<D>(&mut self, d: &D) -> Result<D::Data, Error>
@@ -98,7 +99,7 @@ impl RecvMessage for PeerConnection {
         debug!("Awaiting incoming messages from the remote peer");
         let payload = self.session.recv_raw_message()?;
         trace!("Incoming data from the remote peer: {:?}", payload);
-        let message: D::Data = d.unmarshall(&payload).map_err(Into::into)?;
+        let message: D::Data = d.unmarshall(Cursor::new(payload)).map_err(Into::into)?;
         debug!("Message from the remote peer: {}", message);
         Ok(message)
     }
@@ -126,7 +127,7 @@ impl RecvMessage for PeerReceiver {
         debug!("Awaiting incoming messages from the remote peer");
         let payload = self.receiver.recv_raw_message()?;
         trace!("Incoming data from the remote peer: {:?}", payload);
-        let message: D::Data = d.unmarshall(&payload).map_err(Into::into)?;
+        let message: D::Data = d.unmarshall(Cursor::new(payload)).map_err(Into::into)?;
         debug!("Message from the remote peer: {}", message);
         Ok(message)
     }

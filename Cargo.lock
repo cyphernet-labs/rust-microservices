@@ -676,9 +676,9 @@ dependencies = [
 
 [[package]]
 name = "internet2"
-version = "0.5.12"
+version = "0.5.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3cdf4af4ad2684fc4408364567c6d09c55e5d4c93398ce3fc41df7d53a6b6381"
+checksum = "cf1230f7e5c6f0ab212e5afc01934deb977141b160c87608f62b636ad7615aa7"
 dependencies = [
  "amplify",
  "bitcoin_hashes",

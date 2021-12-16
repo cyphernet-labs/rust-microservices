@@ -12,6 +12,7 @@
 // If not, see <https://opensource.org/licenses/MIT>.
 
 use std::collections::HashMap;
+use std::io::Cursor;
 
 use internet2::transport::zmqsocket;
 use internet2::{session, PlainTranscoder, Session, Unmarshall, Unmarshaller};
@@ -247,7 +248,7 @@ where
 
             let routed_frame = sender.session.recv_routed_message()?;
             let request =
-                (&*self.unmarshaller.unmarshall(&routed_frame.msg)?).clone();
+                (&*self.unmarshaller.unmarshall(Cursor::new(routed_frame.msg))?).clone();
             let source = B::Address::from(routed_frame.src);
 
             vec.push((bus_id, source, request));
@@ -299,7 +300,7 @@ where
 
             let routed_frame = sender.session.recv_routed_message()?;
             let request =
-                (&*self.unmarshaller.unmarshall(&routed_frame.msg)?).clone();
+                (&*self.unmarshaller.unmarshall(Cursor::new(routed_frame.msg))?).clone();
             let source = B::Address::from(routed_frame.src);
             let dest = B::Address::from(routed_frame.dst);
 

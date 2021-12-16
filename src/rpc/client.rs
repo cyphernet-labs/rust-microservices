@@ -12,6 +12,7 @@
 // If not, see <https://opensource.org/licenses/MIT>.
 
 use std::collections::HashMap;
+use std::io::Cursor;
 
 use internet2::transport::zmqsocket::{ZmqSocketAddr, ZmqType};
 use internet2::{
@@ -73,7 +74,7 @@ where
             .ok_or(Error::UnknownEndpoint(endpoint.to_string()))?;
         session.send_raw_message(&data)?;
         let raw = session.recv_raw_message()?;
-        let reply = self.unmarshaller.unmarshall(&raw)?;
+        let reply = self.unmarshaller.unmarshall(Cursor::new(raw))?;
         Ok((&*reply).clone())
     }
 }
