@@ -38,23 +38,23 @@ where
 
     fn on_ready(
         &mut self,
-        _senders: &mut SenderList<B>,
+        _endpoints: &mut EndpointList<B>,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
 
     fn handle(
         &mut self,
-        senders: &mut SenderList<B>,
+        endpoints: &mut EndpointList<B>,
         bus_id: B,
         source: B::Address,
         request: Self::Request,
     ) -> Result<(), Self::Error>;
 
-    fn handle_err(&mut self, senders: &mut SenderList<B>, error: Error<B::Address>) -> Result<(), Self::Error>;
+    fn handle_err(&mut self, endpoints: &mut EndpointList<B>, error: Error<B::Address>) -> Result<(), Self::Error>;
 }
 
-struct Sender<A>
+struct Endpoint<A>
 where
     A: ServiceAddress,
 {
@@ -62,7 +62,7 @@ where
     pub(self) router: Option<A>,
 }
 
-impl<A> Sender<A>
+impl<A> Endpoint<A>
 where
     A: ServiceAddress,
 {
@@ -123,11 +123,11 @@ where
     }
 }
 
-pub struct SenderList<B>(pub(self) HashMap<B, Sender<B::Address>>)
+pub struct EndpointList<B>(pub(self) HashMap<B, Endpoint<B::Address>>)
 where
     B: BusId;
 
-impl<B> SenderList<B>
+impl<B> EndpointList<B>
 where
     B: BusId,
 {
@@ -165,7 +165,7 @@ where
     H: Handler<B, Request = R>,
     Error<B::Address>: From<H::Error>,
 {
-    senders: SenderList<B>,
+    senders: EndpointList<B>,
     unmarshaller: Unmarshaller<R>,
     handler: H,
     api_type: zmqsocket::ZmqType,
@@ -183,10 +183,10 @@ where
         handler: H,
         api_type: zmqsocket::ZmqType,
     ) -> Result<Self, Error<B::Address>> {
-        let senders = SenderList::new();
+        let endpoints = EndpointList::new();
         let unmarshaller = R::create_unmarshaller();
         let mut me = Self {
-            senders,
+            senders: endpoints,
             unmarshaller,
             handler,
             api_type,
@@ -230,7 +230,7 @@ where
             Some(router) if router == self.handler.identity() => None,
             router => router,
         };
-        self.senders.0.insert(id, Sender { session, router });
+        self.senders.0.insert(id, Endpoint { session, router });
         Ok(())
     }
 

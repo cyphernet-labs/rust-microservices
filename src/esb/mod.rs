@@ -12,7 +12,7 @@
 // If not, see <https://opensource.org/licenses/MIT>.
 
 mod controller;
-pub use controller::{Controller, Handler, SenderList};
+pub use controller::{Controller, Handler, EndpointList};
 
 use std::fmt::{Debug, Display};
 use std::hash::Hash;
