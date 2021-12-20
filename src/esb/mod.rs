@@ -12,11 +12,10 @@
 // If not, see <https://opensource.org/licenses/MIT>.
 
 mod controller;
-pub use controller::{Controller, Handler, EndpointList};
-
 use std::fmt::{Debug, Display};
 use std::hash::Hash;
 
+pub use controller::{Controller, EndpointList, Handler};
 use internet2::{presentation, transport, zmqsocket};
 
 /// Marker traits for service bus identifiers
@@ -40,23 +39,12 @@ impl<A> BusConfig<A>
 where
     A: ServiceAddress,
 {
-    pub fn with_locator(
-        locator: zmqsocket::ZmqSocketAddr,
-        router: Option<A>,
-    ) -> Self {
-        Self {
-            carrier: zmqsocket::Carrier::Locator(locator),
-            router,
-            queued: false,
-        }
+    pub fn with_locator(locator: zmqsocket::ZmqSocketAddr, router: Option<A>) -> Self {
+        Self { carrier: zmqsocket::Carrier::Locator(locator), router, queued: false }
     }
 
     pub fn with_socket(socket: zmq::Socket, router: Option<A>) -> Self {
-        Self {
-            carrier: zmqsocket::Carrier::Socket(socket),
-            router,
-            queued: false,
-        }
+        Self { carrier: zmqsocket::Carrier::Socket(socket), router, queued: false }
     }
 }
 
@@ -92,9 +80,7 @@ pub enum Error<A: ServiceAddress> {
 }
 
 impl<A: ServiceAddress> From<zmq::Error> for Error<A> {
-    fn from(err: zmq::Error) -> Self {
-        Error::Transport(transport::Error::from(err))
-    }
+    fn from(err: zmq::Error) -> Self { Error::Transport(transport::Error::from(err)) }
 }
 
 impl<A: ServiceAddress> From<presentation::Error> for Error<A> {

@@ -30,7 +30,7 @@ pub struct FormatParseError;
     Debug,
     Display,
     StrictEncode,
-    StrictDecode,
+    StrictDecode
 )]
 #[cfg_attr(feature = "clap", derive(ArgEnum))]
 #[cfg_attr(
@@ -92,7 +92,7 @@ impl FromStr for BinaryFormat {
     Debug,
     Display,
     StrictEncode,
-    StrictDecode,
+    StrictDecode
 )]
 #[cfg_attr(feature = "clap", derive(ArgEnum))]
 #[cfg_attr(
@@ -164,7 +164,7 @@ impl FromStr for StructuredFormat {
     Debug,
     Display,
     StrictEncode,
-    StrictDecode,
+    StrictDecode
 )]
 #[cfg_attr(feature = "clap", derive(ArgEnum))]
 #[cfg_attr(

@@ -34,10 +34,7 @@ pub trait TryService: Sized {
     fn run_or_panic(self, service_name: &str) {
         match self.try_run_loop() {
             Err(err) => {
-                panic!(
-                    "{} run loop has failed with {}",
-                    service_name, err
-                )
+                panic!("{} run loop has failed with {}", service_name, err)
             }
             Ok(_) => {
                 panic!("{} has failed without reporting a error", service_name)

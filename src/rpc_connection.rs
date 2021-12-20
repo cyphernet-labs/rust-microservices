@@ -51,9 +51,7 @@ where
         local: &LocalNode,
         default_port: u16,
     ) -> Result<Self, Error> {
-        let endpoint = remote
-            .to_node_addr(default_port)
-            .ok_or(Error::InvalidEndpoint)?;
+        let endpoint = remote.to_node_addr(default_port).ok_or(Error::InvalidEndpoint)?;
         let session = endpoint.connect(local)?;
         Ok(Self { api, session })
     }
@@ -64,9 +62,7 @@ where
         node: &LocalNode,
         default_port: u16,
     ) -> Result<Self, Error> {
-        let endpoint = addr
-            .to_node_addr(default_port)
-            .ok_or(Error::InvalidEndpoint)?;
+        let endpoint = addr.to_node_addr(default_port).ok_or(Error::InvalidEndpoint)?;
         let session = endpoint.connect(node)?;
         Ok(Self { api, session })
     }

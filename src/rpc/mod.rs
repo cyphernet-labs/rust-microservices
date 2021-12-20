@@ -28,14 +28,8 @@ use crate::error::RuntimeError;
 pub trait EndpointId: Copy + Eq + Hash + Display {}
 
 /// Information about server-side failure returned through RPC API
-#[cfg_attr(
-    feature = "serde",
-    derive(Serialize, Deserialize),
-    serde(crate = "serde_crate")
-)]
-#[derive(
-    Clone, PartialEq, Eq, Hash, Debug, Display, StrictEncode, StrictDecode,
-)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
+#[derive(Clone, PartialEq, Eq, Hash, Debug, Display, StrictEncode, StrictDecode)]
 #[display("{info}", alt = "Server returned failure #{code}: {info}")]
 pub struct Failure {
     /// Failure code
@@ -70,9 +64,7 @@ pub enum Error {
 }
 
 impl From<zmq::Error> for Error {
-    fn from(err: zmq::Error) -> Self {
-        Error::Transport(transport::Error::from(err))
-    }
+    fn from(err: zmq::Error) -> Self { Error::Transport(transport::Error::from(err)) }
 }
 
 impl From<presentation::Error> for Error {
@@ -86,10 +78,7 @@ impl From<presentation::Error> for Error {
 
 impl From<presentation::Error> for Failure {
     fn from(err: presentation::Error) -> Self {
-        Failure {
-            info: err.to_string(),
-            code: u8::from(err) as u16,
-        }
+        Failure { info: err.to_string(), code: u8::from(err) as u16 }
     }
 }
 
@@ -98,12 +87,7 @@ impl<E> From<RuntimeError<E>> for Failure
 where
     E: crate::error::Error,
 {
-    fn from(err: RuntimeError<E>) -> Self {
-        Failure {
-            code: 100,
-            info: err.to_string(),
-        }
-    }
+    fn from(err: RuntimeError<E>) -> Self { Failure { code: 100, info: err.to_string() } }
 }
 
 /*

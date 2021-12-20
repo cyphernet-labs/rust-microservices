@@ -14,17 +14,17 @@
 //! BOLT-1. Manages state of the remote peer and handles direct communications
 //! with it. Relies on transport layer (BOLT-8-based) protocol.
 
+use std::fmt::Display;
+use std::io::Cursor;
+
 use amplify::Bipolar;
 use internet2::presentation::{Error, Unmarshall};
 use internet2::session::{
-    self, Accept, Connect, LocalNode, PlainTranscoder, Session, Split,
-    ToNodeAddr,
+    self, Accept, Connect, LocalNode, PlainTranscoder, Session, Split, ToNodeAddr,
 };
 use internet2::transport::{brontide, zmqsocket};
-use internet2::{ftcp, LIGHTNING_P2P_DEFAULT_PORT, NoiseTranscoder};
+use internet2::{ftcp, NoiseTranscoder, LIGHTNING_P2P_DEFAULT_PORT};
 use lightning_encoding::LightningEncode;
-use std::fmt::Display;
-use std::io::Cursor;
 
 pub trait RecvMessage {
     fn recv_message<D>(&mut self, d: &D) -> Result<D::Data, Error>
@@ -35,10 +35,7 @@ pub trait RecvMessage {
 }
 
 pub trait SendMessage {
-    fn send_message(
-        &mut self,
-        message: impl LightningEncode + Display,
-    ) -> Result<usize, Error>;
+    fn send_message(&mut self, message: impl LightningEncode + Display) -> Result<usize, Error>;
 }
 
 pub struct PeerConnection {
@@ -60,30 +57,18 @@ pub struct PeerSender {
 }
 
 impl PeerConnection {
-    pub fn with(session: impl Session + 'static) -> Self {
-        Self {
-            session: Box::new(session),
-        }
-    }
+    pub fn with(session: impl Session + 'static) -> Self { Self { session: Box::new(session) } }
 
-    pub fn connect(
-        remote: impl ToNodeAddr,
-        local: &LocalNode,
-    ) -> Result<Self, Error> {
-        let endpoint = remote
-            .to_node_addr(LIGHTNING_P2P_DEFAULT_PORT)
-            .ok_or(Error::InvalidEndpoint)?;
+    pub fn connect(remote: impl ToNodeAddr, local: &LocalNode) -> Result<Self, Error> {
+        let endpoint =
+            remote.to_node_addr(LIGHTNING_P2P_DEFAULT_PORT).ok_or(Error::InvalidEndpoint)?;
         let session = endpoint.connect(local)?;
         Ok(Self { session })
     }
 
-    pub fn accept(
-        remote: impl ToNodeAddr,
-        local: &LocalNode,
-    ) -> Result<Self, Error> {
-        let endpoint = remote
-            .to_node_addr(LIGHTNING_P2P_DEFAULT_PORT)
-            .ok_or(Error::InvalidEndpoint)?;
+    pub fn accept(remote: impl ToNodeAddr, local: &LocalNode) -> Result<Self, Error> {
+        let endpoint =
+            remote.to_node_addr(LIGHTNING_P2P_DEFAULT_PORT).ok_or(Error::InvalidEndpoint)?;
         let session = endpoint.accept(local)?;
         Ok(Self { session })
     }
@@ -106,10 +91,7 @@ impl RecvMessage for PeerConnection {
 }
 
 impl SendMessage for PeerConnection {
-    fn send_message(
-        &mut self,
-        message: impl LightningEncode + Display,
-    ) -> Result<usize, Error> {
+    fn send_message(&mut self, message: impl LightningEncode + Display) -> Result<usize, Error> {
         debug!("Sending LN message to the remote peer: {}", message);
         let data = &message.lightning_serialize()?;
         trace!("Lightning-encoded message representation: {:?}", data);
@@ -134,10 +116,7 @@ impl RecvMessage for PeerReceiver {
 }
 
 impl SendMessage for PeerSender {
-    fn send_message(
-        &mut self,
-        message: impl LightningEncode + Display,
-    ) -> Result<usize, Error> {
+    fn send_message(&mut self, message: impl LightningEncode + Display) -> Result<usize, Error> {
         debug!("Sending LN message to the remote peer: {}", message);
         let data = &message.lightning_serialize()?;
         trace!("Lightning-encoded message representation: {:?}", data);
@@ -156,39 +135,30 @@ impl Bipolar for PeerConnection {
 
     fn split(self) -> (Self::Left, Self::Right) {
         let session = self.session.into_any();
-        let (input, output) = if let Some(_) = session
-            .downcast_ref::<session::Raw<PlainTranscoder, ftcp::Connection>>()
+        let (input, output) = if let Some(_) =
+            session.downcast_ref::<session::Raw<PlainTranscoder, ftcp::Connection>>()
         {
             let session = session
                 .downcast::<session::Raw<PlainTranscoder, ftcp::Connection>>()
-                .expect(
-                    "Must not fail; we just ensured that with downcast_ref",
-                );
+                .expect("Must not fail; we just ensured that with downcast_ref");
             (*session).split()
-        } else if let Some(_) = session
-            .downcast_ref::<session::Raw<NoiseTranscoder, brontide::Connection>>()
+        } else if let Some(_) =
+            session.downcast_ref::<session::Raw<NoiseTranscoder, brontide::Connection>>()
         {
             let session = session
                 .downcast::<session::Raw<NoiseTranscoder, brontide::Connection>>()
-                .expect(
-                    "Must not fail; we just ensured that with downcast_ref",
-                );
+                .expect("Must not fail; we just ensured that with downcast_ref");
             (*session).split()
-        } else if let Some(_) = session
-            .downcast_ref::<session::Raw<PlainTranscoder, zmqsocket::Connection>>()
+        } else if let Some(_) =
+            session.downcast_ref::<session::Raw<PlainTranscoder, zmqsocket::Connection>>()
         {
             let session = session
                 .downcast::<session::Raw<PlainTranscoder, zmqsocket::Connection>>()
-                .expect(
-                    "Must not fail; we just ensured that with downcast_ref",
-                );
+                .expect("Must not fail; we just ensured that with downcast_ref");
             (*session).split()
         } else {
             panic!("Impossible to split this type of Session")
         };
-        (
-            PeerReceiver { receiver: input },
-            PeerSender { sender: output },
-        )
+        (PeerReceiver { receiver: input }, PeerSender { sender: output })
     }
 }

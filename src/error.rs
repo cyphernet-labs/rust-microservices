@@ -44,9 +44,7 @@ pub enum ConfigInitError {
 
 #[cfg(feature = "_config")]
 impl From<io::Error> for ConfigInitError {
-    fn from(err: io::Error) -> Self {
-        Self::Io(err.to_string())
-    }
+    fn from(err: io::Error) -> Self { Self::Io(err.to_string()) }
 }
 
 /// Errors which may happen during bootstrap phase of an application or a
@@ -104,9 +102,7 @@ impl<E> From<&str> for BootstrapError<E>
 where
     E: Error,
 {
-    fn from(err: &str) -> Self {
-        BootstrapError::ArgParse(err.to_string())
-    }
+    fn from(err: &str) -> Self { BootstrapError::ArgParse(err.to_string()) }
 }
 
 #[cfg(feature = "_config")]
@@ -114,9 +110,7 @@ impl<E> From<io::Error> for BootstrapError<E>
 where
     E: Error,
 {
-    fn from(err: io::Error) -> Self {
-        Self::Io(err.to_string())
-    }
+    fn from(err: io::Error) -> Self { Self::Io(err.to_string()) }
 }
 
 /// Errors which may happen during daemon runtime execution within

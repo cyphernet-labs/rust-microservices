@@ -12,22 +12,20 @@
 // If not, see <https://opensource.org/licenses/MIT>.
 
 mod peer_connection;
-use crate::node::TryService;
-use internet2::presentation::{Error, TypedEnum, Unmarshall, Unmarshaller};
-pub use peer_connection::{
-    PeerConnection, PeerReceiver, PeerSender, RecvMessage, SendMessage,
-};
 use std::fmt::{Debug, Display};
+
+use internet2::presentation::{Error, TypedEnum, Unmarshall, Unmarshaller};
+pub use peer_connection::{PeerConnection, PeerReceiver, PeerSender, RecvMessage, SendMessage};
+
+use crate::node::TryService;
 
 /// Trait for types handling specific LNPWP messages.
 pub trait Handler<T: TypedEnum> {
     type Error: crate::error::Error + From<Error>;
 
     /// Function that processes specific peer message
-    fn handle(
-        &mut self,
-        message: <Unmarshaller<T> as Unmarshall>::Data,
-    ) -> Result<(), Self::Error>;
+    fn handle(&mut self, message: <Unmarshaller<T> as Unmarshall>::Data)
+        -> Result<(), Self::Error>;
 
     fn handle_err(&mut self, error: Self::Error) -> Result<(), Self::Error>;
 }
@@ -53,16 +51,8 @@ where
     <Unmarshaller<T> as Unmarshall>::Data: Display + Debug,
     <Unmarshaller<T> as Unmarshall>::Error: Into<Error>,
 {
-    pub fn with(
-        receiver: PeerReceiver,
-        handler: H,
-        unmarshaller: Unmarshaller<T>,
-    ) -> Self {
-        Self {
-            receiver,
-            handler,
-            unmarshaller,
-        }
+    pub fn with(receiver: PeerReceiver, handler: H, unmarshaller: Unmarshaller<T>) -> Self {
+        Self { receiver, handler, unmarshaller }
     }
 }
 

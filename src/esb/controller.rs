@@ -36,12 +36,7 @@ where
 
     fn identity(&self) -> B::Address;
 
-    fn on_ready(
-        &mut self,
-        _endpoints: &mut EndpointList<B>,
-    ) -> Result<(), Self::Error> {
-        Ok(())
-    }
+    fn on_ready(&mut self, _endpoints: &mut EndpointList<B>) -> Result<(), Self::Error> { Ok(()) }
 
     fn handle(
         &mut self,
@@ -51,7 +46,11 @@ where
         request: Self::Request,
     ) -> Result<(), Self::Error>;
 
-    fn handle_err(&mut self, endpoints: &mut EndpointList<B>, error: Error<B::Address>) -> Result<(), Self::Error>;
+    fn handle_err(
+        &mut self,
+        endpoints: &mut EndpointList<B>,
+        error: Error<B::Address>,
+    ) -> Result<(), Self::Error>;
 }
 
 struct Endpoint<A>
@@ -66,54 +65,30 @@ impl<A> Endpoint<A>
 where
     A: ServiceAddress,
 {
-    pub(self) fn send_to<R>(
-        &mut self,
-        source: A,
-        dest: A,
-        request: R,
-    ) -> Result<(), Error<A>>
+    pub(self) fn send_to<R>(&mut self, source: A, dest: A, request: R) -> Result<(), Error<A>>
     where
         R: Request,
     {
         let data = request.serialize();
         let router = match self.router {
             None => {
-                trace!(
-                    "Sending {} from {} to {} directly",
-                    request,
-                    source,
-                    dest,
-                );
+                trace!("Sending {} from {} to {} directly", request, source, dest,);
                 dest.clone()
             }
             Some(ref router) if &source == router => {
-                trace!(
-                    "Routing {} from {} to {}",
-                    request,
-                    source,
-                    dest,
-                );
+                trace!("Routing {} from {} to {}", request, source, dest,);
                 dest.clone()
             }
             Some(ref router) => {
-                trace!(
-                    "Sending {} from {} to {} via router {}",
-                    request,
-                    source,
-                    dest,
-                    router,
-                );
+                trace!("Sending {} from {} to {} via router {}", request, source, dest, router,);
                 router.clone()
             }
         };
         let src = source.clone();
         let dst = dest.clone();
-        self.session.send_routed_message(
-            &source.into(),
-            &router.into(),
-            &dest.into(),
-            &data,
-        ).map_err(|err| Error::Send(src, dst, err))?;
+        self.session
+            .send_routed_message(&source.into(), &router.into(), &dest.into(), &data)
+            .map_err(|err| Error::Send(src, dst, err))?;
         Ok(())
     }
 
@@ -131,9 +106,7 @@ impl<B> EndpointList<B>
 where
     B: BusId,
 {
-    pub fn new() -> Self {
-        Self(Default::default())
-    }
+    pub fn new() -> Self { Self(Default::default()) }
 
     pub fn send_to<R>(
         &mut self,
@@ -145,15 +118,19 @@ where
     where
         R: Request,
     {
-        let session = self
-            .0
-            .get_mut(&bus_id)
-            .ok_or(Error::UnknownBusId(bus_id.to_string()))?;
+        let session = self.0.get_mut(&bus_id).ok_or(Error::UnknownBusId(bus_id.to_string()))?;
         session.send_to(source, dest, request)
     }
 
-    pub fn set_identity(&mut self, bus_id: B, identity: B::Address) -> Result<(), Error<B::Address>> {
-        self.0.get_mut(&bus_id).ok_or(Error::UnknownBusId(bus_id.to_string()))?.set_identity(identity)
+    pub fn set_identity(
+        &mut self,
+        bus_id: B,
+        identity: B::Address,
+    ) -> Result<(), Error<B::Address>> {
+        self.0
+            .get_mut(&bus_id)
+            .ok_or(Error::UnknownBusId(bus_id.to_string()))?
+            .set_identity(identity)
     }
 }
 
@@ -185,12 +162,7 @@ where
     ) -> Result<Self, Error<B::Address>> {
         let endpoints = EndpointList::new();
         let unmarshaller = R::create_unmarshaller();
-        let mut me = Self {
-            senders: endpoints,
-            unmarshaller,
-            handler,
-            api_type,
-        };
+        let mut me = Self { senders: endpoints, unmarshaller, handler, api_type };
         for (id, config) in service_bus {
             me.add_service_bus(id, config)?;
         }
@@ -240,24 +212,16 @@ where
         dest: B::Address,
         request: R,
     ) -> Result<(), Error<B::Address>> {
-        self.senders
-            .send_to(bus_id, self.handler.identity(), dest, request)
+        self.senders.send_to(bus_id, self.handler.identity(), dest, request)
     }
 
-    pub fn recv_poll(
-        &mut self,
-    ) -> Result<Vec<(B, B::Address, H::Request)>, Error<B::Address>> {
+    pub fn recv_poll(&mut self) -> Result<Vec<(B, B::Address, H::Request)>, Error<B::Address>> {
         let mut vec = vec![];
         for bus_id in self.poll()? {
-            let sender = self
-                .senders
-                .0
-                .get_mut(&bus_id)
-                .expect("must exist, just indexed");
+            let sender = self.senders.0.get_mut(&bus_id).expect("must exist, just indexed");
 
             let routed_frame = sender.session.recv_routed_message()?;
-            let request =
-                (&*self.unmarshaller.unmarshall(Cursor::new(routed_frame.msg))?).clone();
+            let request = (&*self.unmarshaller.unmarshall(Cursor::new(routed_frame.msg))?).clone();
             let source = B::Address::from(routed_frame.src);
 
             vec.push((bus_id, source, request));
@@ -301,15 +265,10 @@ where
     #[cfg(feature = "node")]
     fn run(&mut self) -> Result<(), Error<B::Address>> {
         for bus_id in self.poll()? {
-            let sender = self
-                .senders
-                .0
-                .get_mut(&bus_id)
-                .expect("must exist, just indexed");
+            let sender = self.senders.0.get_mut(&bus_id).expect("must exist, just indexed");
 
             let routed_frame = sender.session.recv_routed_message()?;
-            let request =
-                (&*self.unmarshaller.unmarshall(Cursor::new(routed_frame.msg))?).clone();
+            let request = (&*self.unmarshaller.unmarshall(Cursor::new(routed_frame.msg))?).clone();
             let source = B::Address::from(routed_frame.src);
             let dest = B::Address::from(routed_frame.dst);
 
@@ -317,12 +276,7 @@ where
                 // We are the destination
                 debug!("{} -> {}: {}", source, dest, request);
 
-                self.handler.handle(
-                    &mut self.senders,
-                    bus_id,
-                    source,
-                    request,
-                )?;
+                self.handler.handle(&mut self.senders, bus_id, source, request)?;
             } else {
                 // Need to route
                 trace!("Routing {} from {} to {}", request, source, dest);
@@ -341,35 +295,28 @@ where
             .iter()
             .map(|(service, sender)| {
                 index.push(service);
-                sender
-                    .session
-                    .as_socket()
-                    .as_poll_item(zmq::POLLIN | zmq::POLLERR)
+                sender.session.as_socket().as_poll_item(zmq::POLLIN | zmq::POLLERR)
             })
             .collect::<Vec<_>>();
 
-        trace!(
-            "Awaiting for ESB request from {} service buses...",
-            items.len()
-        );
+        trace!("Awaiting for ESB request from {} service buses...", items.len());
         let _ = zmq::poll(&mut items, -1)?;
 
         let service_buses = items
             .iter()
             .enumerate()
-            .filter_map(|(i, item)| {
-                if item.get_revents().is_empty() {
-                    None
-                } else {
-                    Some(*index[i])
-                }
-            })
+            .filter_map(
+                |(i, item)| {
+                    if item.get_revents().is_empty() {
+                        None
+                    } else {
+                        Some(*index[i])
+                    }
+                },
+            )
             .collect::<Vec<_>>();
 
-        trace!(
-            "Received ESB request from {} service busses...",
-            service_buses.len()
-        );
+        trace!("Received ESB request from {} service busses...", service_buses.len());
 
         Ok(service_buses)
     }
