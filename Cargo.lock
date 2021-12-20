@@ -676,9 +676,9 @@ dependencies = [
 
 [[package]]
 name = "internet2"
-version = "0.5.13"
+version = "0.5.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cf1230f7e5c6f0ab212e5afc01934deb977141b160c87608f62b636ad7615aa7"
+checksum = "79d9f7dc5106bf42a56dff890792b5aaf0ee3c260df552330bb55355f8a0558d"
 dependencies = [
  "amplify",
  "bitcoin_hashes",
@@ -733,9 +733,9 @@ checksum = "f98a04dce437184842841303488f70d0188c5f51437d2a834dc097eafa909a01"
 
 [[package]]
 name = "lightning_encoding"
-version = "0.5.4"
+version = "0.5.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "653527d9baca87185463e33104099cc30234e86dd210e4e57f2d770ba038665e"
+checksum = "d145410a268b41aa9077c34c12e5a6f2581836827c184b624cb14587e7de8eda"
 dependencies = [
  "amplify",
  "bitcoin",

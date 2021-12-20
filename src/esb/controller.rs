@@ -116,6 +116,11 @@ where
         ).map_err(|err| Error::Send(src, dst, err))?;
         Ok(())
     }
+
+    #[inline]
+    pub(self) fn set_identity(&mut self, identity: A) -> Result<(), Error<A>> {
+        self.session.set_identity(&identity.into()).map_err(Error::from)
+    }
 }
 
 pub struct SenderList<B>(pub(self) HashMap<B, Sender<B::Address>>)
@@ -145,6 +150,10 @@ where
             .get_mut(&bus_id)
             .ok_or(Error::UnknownBusId(bus_id.to_string()))?;
         session.send_to(source, dest, request)
+    }
+
+    pub fn set_identity(&mut self, bus_id: B, identity: B::Address) -> Result<(), Error<B::Address>> {
+        self.0.get_mut(&bus_id).ok_or(Error::UnknownBusId(bus_id.to_string()))?.set_identity(identity)
     }
 }
 
