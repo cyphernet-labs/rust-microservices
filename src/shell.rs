@@ -125,7 +125,7 @@ pub trait Exec {
     /// Runtime context data type, that is provided for execution context.
     type Client: Sized;
     /// Error type that may result from the execution
-    type Error: Error;
+    type Error: std::error::Error;
     /// Main execution routine
     fn exec(self, client: &mut Self::Client) -> Result<(), Self::Error>;
 }
