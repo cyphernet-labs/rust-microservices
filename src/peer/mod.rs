@@ -12,6 +12,8 @@
 // If not, see <https://opensource.org/licenses/MIT>.
 
 mod peer_connection;
+pub mod supervisor;
+
 use std::fmt::{Debug, Display};
 
 use internet2::presentation::{Error, TypedEnum, Unmarshall, Unmarshaller};
@@ -19,7 +21,26 @@ pub use peer_connection::{PeerConnection, PeerReceiver, PeerSender, RecvMessage,
 
 use crate::node::TryService;
 
-/// Trait for types handling specific LNPWP messages.
+/// Chooses type of service runtime
+#[derive(Clone, PartialEq, Eq, Debug, Display)]
+pub enum PeerSocket {
+    /// The service should listen for incoming connections on a certain
+    /// TCP socket, which may be IPv4- or IPv6-based. For Tor hidden services
+    /// use IPv4 TCP port proxied as a Tor hidden service in `torrc`.
+    #[display("--listen={0}")]
+    Listen(internet2::RemoteSocketAddr),
+
+    /// The service should connect to the remote peer residing on the provided
+    /// address, which may be either IPv4/v6 or Onion V2/v3 address (using
+    /// onion hidden services will require
+    /// DNS names, due to a censorship vulnerability issues and for avoiding
+    /// leaking any information about th elocal node to DNS resolvers, are not
+    /// supported.
+    #[display("--connect={0}")]
+    Connect(internet2::RemoteNodeAddr),
+}
+
+/// Trait for types handling specific LNP2P messages.
 pub trait Handler<T: TypedEnum> {
     type Error: crate::error::Error + From<Error>;
 

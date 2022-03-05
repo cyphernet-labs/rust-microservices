@@ -19,8 +19,6 @@ use std::str::FromStr;
 
 use log::LevelFilter;
 
-use crate::error::Error;
-
 /// Represents desired logging verbodity level
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Display)]
 #[cfg_attr(
@@ -79,11 +77,15 @@ impl FromStr for LogLevel {
 }
 
 impl From<u8> for LogLevel {
-    fn from(val: u8) -> Self { Self::from_verbosity_flag_count(val) }
+    fn from(val: u8) -> Self {
+        Self::from_verbosity_flag_count(val)
+    }
 }
 
 impl From<LogLevel> for u8 {
-    fn from(log_level: LogLevel) -> Self { log_level.verbosity_flag_count() }
+    fn from(log_level: LogLevel) -> Self {
+        log_level.verbosity_flag_count()
+    }
 }
 
 impl LogLevel {

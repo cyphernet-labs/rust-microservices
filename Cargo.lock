@@ -840,7 +840,7 @@ dependencies = [
 
 [[package]]
 name = "microservices"
-version = "0.6.0-beta.1"
+version = "0.6.0-beta.2"
 dependencies = [
  "amplify",
  "clap",
@@ -849,6 +849,8 @@ dependencies = [
  "internet2",
  "lightning_encoding",
  "log",
+ "nix",
+ "secp256k1",
  "serde 1.0.130",
  "serde_with",
  "strict_encoding",
@@ -863,6 +865,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d69450033bf162edf854d4aacaff82ca5ef34fa81f6cf69e1c81a103f0834997"
 dependencies = [
  "bitcoin",
+]
+
+[[package]]
+name = "nix"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b2ccba0cfe4fdf15982d1674c69b1fd80bad427d293849982668dfe454bd61f2"
+dependencies = [
+ "bitflags",
+ "cc",
+ "cfg-if",
+ "libc",
 ]
 
 [[package]]
@@ -1232,9 +1246,9 @@ dependencies = [
 
 [[package]]
 name = "secp256k1-sys"
-version = "0.4.1"
+version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "827cb7cce42533829c792fc51b82fbf18b125b45a702ef2c8be77fce65463a7b"
+checksum = "957da2573cde917463ece3570eab4a0b3f19de6f1646cde62e6fd3868f566036"
 dependencies = [
  "cc",
 ]
