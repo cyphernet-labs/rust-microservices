@@ -19,9 +19,7 @@ use std::io::Cursor;
 
 use amplify::Bipolar;
 use internet2::presentation::{Error, Unmarshall};
-use internet2::session::{
-    self, Accept, Connect, LocalNode, PlainTranscoder, Session, Split, ToNodeAddr,
-};
+use internet2::session::{self, Connect, LocalNode, PlainTranscoder, Session, Split, ToNodeAddr};
 use internet2::transport::{brontide, zmqsocket};
 use internet2::{ftcp, NoiseTranscoder, LIGHTNING_P2P_DEFAULT_PORT};
 use lightning_encoding::LightningEncode;
@@ -63,13 +61,6 @@ impl PeerConnection {
         let endpoint =
             remote.to_node_addr(LIGHTNING_P2P_DEFAULT_PORT).ok_or(Error::InvalidEndpoint)?;
         let session = endpoint.connect(local)?;
-        Ok(Self { session })
-    }
-
-    pub fn accept(remote: impl ToNodeAddr, local: &LocalNode) -> Result<Self, Error> {
-        let endpoint =
-            remote.to_node_addr(LIGHTNING_P2P_DEFAULT_PORT).ok_or(Error::InvalidEndpoint)?;
-        let session = endpoint.accept(local)?;
         Ok(Self { session })
     }
 }
