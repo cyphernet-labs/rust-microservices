@@ -17,7 +17,6 @@ use std::fmt::Debug;
 use std::net::{SocketAddr, TcpListener};
 use std::thread;
 use std::thread::JoinHandle;
-use std::time::Duration;
 
 use internet2::addr::InetSocketAddr;
 use internet2::{session, LocalNode, LocalSocketAddr, NodeAddr, RemoteNodeAddr, RemoteSocketAddr};
@@ -132,7 +131,7 @@ where
             .expect("Unable to bind to Lightning network peer socket");
 
     info!("Running TCP listener event loop");
-    let stream = loop {
+    loop {
         debug!("Awaiting for incoming connections...");
         let (stream, remote_socket_addr) =
             listener.accept().expect("Error accepting incpming peer connection");
@@ -140,18 +139,19 @@ where
 
         params.remote_socket = remote_socket_addr.into();
 
+        let child_params = params.clone();
+        let init = move || {
+            debug!("Establishing session with the remote");
+            let session = session::Raw::with_ftcp_unencrypted(stream, inet_addr)
+                .expect("Unable to establish session with the remote peer");
+            let connection = PeerConnection::with(session);
+            runtime(connection, child_params)
+        };
+
         if threaded_daemons {
             debug!("Spawning child thread");
-            let child_params = params.clone();
-            let handler = thread::Builder::new()
-                .name(format!("peerd-listner<{}>", inet_addr))
-                .spawn(move || {
-                    debug!("Establishing session with the remote");
-                    let session = session::Raw::with_ftcp_unencrypted(stream, inet_addr)
-                        .expect("Unable to establish session with the remote peer");
-                    let connection = PeerConnection::with(session);
-                    runtime(connection, child_params)
-                })?;
+            let handler =
+                thread::Builder::new().name(format!("peerd-listner<{}>", inet_addr)).spawn(init)?;
             handlers.push(Handler::Thread(handler));
             // We have started the thread so awaiting for the next incoming connection
         } else {
@@ -162,25 +162,10 @@ where
                 handlers.push(Handler::Process(child));
                 debug!("Child forked with pid {}; returning into main listener event loop", child);
             } else {
-                break stream; // We are in the child process and need to proceed with incoming
-                              // connection
+                init()?;
+                unreachable!("we are in the child process");
             }
         }
         trace!("Total {} peerd are spawned for the incoming connections", handlers.len());
-    };
-
-    // Here we get only in the child process forked from the parent
-    stream
-        .set_read_timeout(Some(Duration::from_secs(30)))
-        .expect("Unable to set up timeout for TCP connection");
-
-    debug!("Establishing session with the remote");
-    let session = session::Raw::with_ftcp_unencrypted(stream, inet_addr)
-        .expect("Unable to establish session with the remote peer");
-
-    debug!("Session successfully established");
-    let connection = PeerConnection::with(session);
-    runtime(connection, params)?;
-
-    unreachable!()
+    }
 }
