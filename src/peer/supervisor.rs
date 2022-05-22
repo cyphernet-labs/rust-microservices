@@ -81,7 +81,7 @@ where
                 remote_addr: RemoteSocketAddr::Ftcp(inet_addr),
             });
 
-            spawner(params, inet_addr, threaded, runtime)?;
+            spawner(params, inet_addr, threaded, local_node, runtime)?;
         }
         PeerSocket::Connect(remote_node_addr) => {
             debug!("Running peer daemon in CONNECT mode");
@@ -116,6 +116,7 @@ fn spawner<Config, Error>(
     mut params: RuntimeParams<Config>,
     inet_addr: InetSocketAddr,
     threaded_daemons: bool,
+    local_node: &LocalNode,
     runtime: fn(connection: PeerConnection, params: RuntimeParams<Config>) -> Result<(), Error>,
 ) -> Result<(), Error>
 where
@@ -140,9 +141,10 @@ where
         params.remote_socket = remote_socket_addr.into();
 
         let child_params = params.clone();
+        let node_sk = local_node.private_key();
         let init = move || {
             debug!("Establishing session with the remote");
-            let session = session::Raw::with_ftcp_unencrypted(stream, inet_addr)
+            let session = session::Raw::with_brontide(stream, node_sk, remote_socket_addr.into())
                 .expect("Unable to establish session with the remote peer");
             let connection = PeerConnection::with(session);
             runtime(connection, child_params)
