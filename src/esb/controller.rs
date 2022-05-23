@@ -142,7 +142,7 @@ where
     H: Handler<B, Request = R>,
     Error<B::Address>: From<H::Error>,
 {
-    senders: EndpointList<B>,
+    endpoints: EndpointList<B>,
     unmarshaller: Unmarshaller<R>,
     handler: H,
     api_type: zmqsocket::ZmqType,
@@ -162,7 +162,7 @@ where
     ) -> Result<Self, Error<B::Address>> {
         let endpoints = EndpointList::new();
         let unmarshaller = R::create_unmarshaller();
-        let mut me = Self { senders: endpoints, unmarshaller, handler, api_type };
+        let mut me = Self { endpoints, unmarshaller, handler, api_type };
         for (id, config) in service_bus {
             me.add_service_bus(id, config)?;
         }
@@ -202,7 +202,7 @@ where
             Some(router) if router == self.handler.identity() => None,
             router => router,
         };
-        self.senders.0.insert(id, Endpoint { session, router });
+        self.endpoints.0.insert(id, Endpoint { session, router });
         Ok(())
     }
 
@@ -212,13 +212,13 @@ where
         dest: B::Address,
         request: R,
     ) -> Result<(), Error<B::Address>> {
-        self.senders.send_to(bus_id, self.handler.identity(), dest, request)
+        self.endpoints.send_to(bus_id, self.handler.identity(), dest, request)
     }
 
     pub fn recv_poll(&mut self) -> Result<Vec<(B, B::Address, H::Request)>, Error<B::Address>> {
         let mut vec = vec![];
         for bus_id in self.poll()? {
-            let sender = self.senders.0.get_mut(&bus_id).expect("must exist, just indexed");
+            let sender = self.endpoints.0.get_mut(&bus_id).expect("must exist, just indexed");
 
             let routed_frame = sender.session.recv_routed_message()?;
             let request = (&*self.unmarshaller.unmarshall(Cursor::new(routed_frame.msg))?).clone();
@@ -242,13 +242,13 @@ where
     type ErrorType = Error<B::Address>;
 
     fn try_run_loop(mut self) -> Result<(), Self::ErrorType> {
-        self.handler.on_ready(&mut self.senders)?;
+        self.handler.on_ready(&mut self.endpoints)?;
         loop {
             match self.run() {
                 Ok(_) => trace!("request processing complete"),
                 Err(err) => {
                     error!("ESB request processing error: {}", err);
-                    self.handler.handle_err(&mut self.senders, err)?;
+                    self.handler.handle_err(&mut self.endpoints, err)?;
                 }
             }
         }
@@ -265,7 +265,7 @@ where
     #[cfg(feature = "node")]
     fn run(&mut self) -> Result<(), Error<B::Address>> {
         for bus_id in self.poll()? {
-            let sender = self.senders.0.get_mut(&bus_id).expect("must exist, just indexed");
+            let sender = self.endpoints.0.get_mut(&bus_id).expect("must exist, just indexed");
 
             let routed_frame = sender.session.recv_routed_message()?;
             let request = (&*self.unmarshaller.unmarshall(Cursor::new(routed_frame.msg))?).clone();
@@ -276,11 +276,11 @@ where
                 // We are the destination
                 debug!("{} -> {}: {}", source, dest, request);
 
-                self.handler.handle(&mut self.senders, bus_id, source, request)?;
+                self.handler.handle(&mut self.endpoints, bus_id, source, request)?;
             } else {
                 // Need to route
                 trace!("Routing {} from {} to {}", request, source, dest);
-                self.senders.send_to(bus_id, source, dest, request)?
+                self.endpoints.send_to(bus_id, source, dest, request)?
             }
         }
 
@@ -290,7 +290,7 @@ where
     fn poll(&mut self) -> Result<Vec<B>, Error<B::Address>> {
         let mut index = vec![];
         let mut items = self
-            .senders
+            .endpoints
             .0
             .iter()
             .map(|(service, sender)| {
