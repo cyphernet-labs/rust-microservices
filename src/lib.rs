@@ -26,7 +26,7 @@
     //missing_docs
 )]
 
-#[cfg_attr(feature = "_rpc", macro_use)]
+#[cfg_attr(any(feature = "_rpc", feature = "shell"), macro_use)]
 extern crate amplify;
 #[macro_use]
 extern crate strict_encoding;
@@ -50,6 +50,7 @@ extern crate zmq_crate as zmq;
 pub mod error;
 #[cfg(feature = "_rpc")]
 pub mod esb;
+#[cfg(feature = "shell")]
 mod format;
 #[cfg(feature = "node")]
 pub mod node;
