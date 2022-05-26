@@ -63,6 +63,7 @@ pub mod rpc_connection;
 #[cfg(feature = "shell")]
 pub mod shell;
 
+#[cfg(feature = "shell")]
 pub use format::{BinaryFormat, FileFormat, FormatParseError, StructuredFormat};
 #[cfg(feature = "_rpc")]
 pub use rpc_connection::RpcConnection;
