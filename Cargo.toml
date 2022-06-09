@@ -1,6 +1,6 @@
 [package]
 name = "microservices"
-version = "0.7.0-rc.2"
+version = "0.8.0-beta.1"
 license = "Apache-2.0"
 authors = ["Dr Maxim Orlovsky <orlovsky@pandoracore.com>"]
 description = "LNP/BP support crate for devloping microservices"
@@ -8,7 +8,8 @@ repository = "https://github.com/internet2-org/rust-microservices"
 homepage = "https://github.com/internet2-org"
 keywords = ["internet2", "microservices", "lnp-bp", "esb", "rpc"]
 readme = "README.md"
-edition = "2018"
+edition = "2021"
+rust-version = "1.59.0"
 
 [lib]
 name = "microservices"
@@ -19,7 +20,7 @@ crate-type = ["rlib", "staticlib"]
 # LNP/BP libraries
 amplify = "3.12.0"
 secp256k1 = "0.22.1"
-internet2 = { version = "0.7.0-rc.1", default-features = false, features = ["derive"] }
+internet2 = { version = "0.8.0-alpha.1", git = "https://github.com/Internet2-WG/rust-internet2", default-features = false, features = ["derive"] }
 lightning_encoding = "0.7.1"
 strict_encoding = { version = "1.8.1", default-features = false, features = ["derive"] }
 # Serialization & parsing
@@ -32,7 +33,7 @@ clap = { version = "3.1", optional = true, features = ["derive"] }
 log = { version = "0.4", features = ["max_level_trace", "release_max_level_debug"] }
 env_logger = "0.7"
 # Networking
-zmq_crate = { package = "zmq", version = "0.9", optional = true }
+zmq2 = { package = "zmq2", version = "0.5", optional = true }
 nix = "0.19"
 
 # Recommended set of features:
@@ -56,18 +57,18 @@ embedded = ["client", "node"]
 # Server node can be run as a part of mobile app and other types of clients;
 # thus `server` != `node`.
 # This feature results in building with features not required for command-line
-node = ["serde", "zmq", "_config", "_rpc"]
+node = ["serde", "_config", "_rpc"]
 # Feature is required for any applications that talks to daemon processes
-client = ["zmq", "_rpc"]
+client = ["_rpc"]
 # Required for all apps that can be launched from command-line shell as binaries
 # (i.e. both servers and cli)
 shell = ["clap", "settings", "amplify/parse_arg", "serde", "_config"]
 
 # Internally used features for convenience
 _config = []
-_rpc = []
+_rpc = ["zmq"]
 
 serde = ["serde_crate", "serde_with", "amplify/serde", "internet2/serde", "toml"]
 peer = ["node", "internet2/keygen"]
-zmq = ["zmq_crate", "internet2/zmq"]
+zmq = ["zmq2", "internet2/zmq"]
 tor = ["internet2/tor"]

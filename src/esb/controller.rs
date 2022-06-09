@@ -14,14 +14,14 @@
 use std::collections::HashMap;
 use std::io::Cursor;
 
-use internet2::transport::zmqsocket;
-use internet2::{session, PlainTranscoder, Session, Unmarshall, Unmarshaller};
+use internet2::session::LocalSession;
+use internet2::{zeromq, SendRecvMessage, Unmarshall, Unmarshaller, ZmqSocketType};
 
 use super::{BusId, Error, ServiceAddress};
 use crate::esb::BusConfig;
 #[cfg(feature = "node")]
 use crate::node::TryService;
-use crate::rpc_connection::Request;
+use crate::rpc::Request;
 
 /// Trait for types handling specific set of ESB RPC API requests structured as
 /// a single type implementing [`Request`].
@@ -57,8 +57,9 @@ struct Endpoint<A>
 where
     A: ServiceAddress,
 {
-    pub(self) session: session::Raw<PlainTranscoder, zmqsocket::Connection>,
+    pub(self) session: LocalSession,
     pub(self) router: Option<A>,
+    pub(self) context: zmq::Context,
 }
 
 impl<A> Endpoint<A>
@@ -94,10 +95,11 @@ where
 
     #[inline]
     pub(self) fn set_identity(&mut self, identity: A) -> Result<(), Error<A>> {
-        self.session.set_identity(&identity.into()).map_err(Error::from)
+        self.session.set_identity(&identity.into(), &self.context).map_err(Error::from)
     }
 }
 
+#[derive(Default)]
 pub struct EndpointList<B>(pub(self) HashMap<B, Endpoint<B::Address>>)
 where
     B: BusId;
@@ -118,7 +120,8 @@ where
     where
         R: Request,
     {
-        let session = self.0.get_mut(&bus_id).ok_or(Error::UnknownBusId(bus_id.to_string()))?;
+        let session =
+            self.0.get_mut(&bus_id).ok_or_else(|| Error::UnknownBusId(bus_id.to_string()))?;
         session.send_to(source, dest, request)
     }
 
@@ -129,7 +132,7 @@ where
     ) -> Result<(), Error<B::Address>> {
         self.0
             .get_mut(&bus_id)
-            .ok_or(Error::UnknownBusId(bus_id.to_string()))?
+            .ok_or_else(|| Error::UnknownBusId(bus_id.to_string()))?
             .set_identity(identity)
     }
 }
@@ -145,7 +148,20 @@ where
     endpoints: EndpointList<B>,
     unmarshaller: Unmarshaller<R>,
     handler: H,
-    api_type: zmqsocket::ZmqType,
+    #[getter(as_copy)]
+    api_type: ZmqSocketType,
+    context: zmq::Context,
+}
+
+#[derive(Debug)]
+pub struct PollItem<B, R>
+where
+    B: BusId,
+    R: Request,
+{
+    pub bus_id: B,
+    pub source: B::Address,
+    pub request: R,
 }
 
 impl<B, R, H> Controller<B, R, H>
@@ -158,11 +174,12 @@ where
     pub fn with(
         service_bus: HashMap<B, BusConfig<B::Address>>,
         handler: H,
-        api_type: zmqsocket::ZmqType,
+        api_type: ZmqSocketType,
+        context: zmq::Context,
     ) -> Result<Self, Error<B::Address>> {
         let endpoints = EndpointList::new();
         let unmarshaller = R::create_unmarshaller();
-        let mut me = Self { endpoints, unmarshaller, handler, api_type };
+        let mut me = Self { endpoints, unmarshaller, handler, api_type, context };
         for (id, config) in service_bus {
             me.add_service_bus(id, config)?;
         }
@@ -175,24 +192,27 @@ where
         config: BusConfig<B::Address>,
     ) -> Result<(), Error<B::Address>> {
         let session = match config.carrier {
-            zmqsocket::Carrier::Locator(locator) => {
+            zeromq::Carrier::Locator(locator) => {
                 debug!(
                     "Creating ESB session for service {} located at {} with identity '{}'",
-                    &id,
-                    &locator,
+                    id,
+                    locator,
                     self.handler.identity()
                 );
-                let session = session::Raw::with_zmq_unencrypted(
+                // TODO: Replace with RpcSession once its impl is completed
+                LocalSession::connect(
                     self.api_type,
                     &locator,
                     None,
                     Some(&self.handler.identity().into()),
-                )?;
-                session
+                    &self.context,
+                )?
             }
-            zmqsocket::Carrier::Socket(socket) => {
+            // TODO: Replace with RpcSession once its impl is completed
+            zeromq::Carrier::Socket(socket) => {
                 debug!("Creating ESB session for service {}", &id);
-                session::Raw::from_zmq_socket_unencrypted(self.api_type, socket)
+                // TODO: Replace with RpcSession once its impl is completed
+                LocalSession::with_zmq_socket(self.api_type, socket)
             }
         };
         if !config.queued {
@@ -202,7 +222,7 @@ where
             Some(router) if router == self.handler.identity() => None,
             router => router,
         };
-        self.endpoints.0.insert(id, Endpoint { session, router });
+        self.endpoints.0.insert(id, Endpoint { session, router, context: self.context.clone() });
         Ok(())
     }
 
@@ -215,7 +235,7 @@ where
         self.endpoints.send_to(bus_id, self.handler.identity(), dest, request)
     }
 
-    pub fn recv_poll(&mut self) -> Result<Vec<(B, B::Address, H::Request)>, Error<B::Address>> {
+    pub fn recv_poll(&mut self) -> Result<Vec<PollItem<B, R>>, Error<B::Address>> {
         let mut vec = vec![];
         for bus_id in self.poll()? {
             let sender = self.endpoints.0.get_mut(&bus_id).expect("must exist, just indexed");
@@ -224,7 +244,7 @@ where
             let request = (&*self.unmarshaller.unmarshall(Cursor::new(routed_frame.msg))?).clone();
             let source = B::Address::from(routed_frame.src);
 
-            vec.push((bus_id, source, request));
+            vec.push(PollItem { bus_id, source, request });
         }
 
         Ok(vec)

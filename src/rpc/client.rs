@@ -14,21 +14,23 @@
 use std::collections::HashMap;
 use std::io::Cursor;
 
-use internet2::transport::zmqsocket::{ZmqSocketAddr, ZmqType};
+use internet2::addr::ServiceAddr;
+use internet2::session::LocalSession;
 use internet2::{
-    session, transport, CreateUnmarshaller, PlainTranscoder, Session, TypedEnum, Unmarshall,
-    Unmarshaller,
+    transport, CreateUnmarshaller, SendRecvMessage, TypedEnum, Unmarshall, Unmarshaller,
+    ZmqSocketType,
 };
 
 use super::{EndpointId, Error};
-use crate::rpc_connection::Api;
+use crate::rpc::connection::Api;
 
 pub struct RpcClient<E, A>
 where
     A: Api,
     E: EndpointId,
 {
-    sessions: HashMap<E, session::Raw<PlainTranscoder, transport::zmqsocket::Connection>>,
+    // TODO: Replace with RpcSession once its implementation is complete
+    sessions: HashMap<E, LocalSession>,
     unmarshaller: Unmarshaller<A::Reply>,
 }
 
@@ -37,12 +39,15 @@ where
     A: Api,
     E: EndpointId,
 {
-    pub fn with(endpoints: HashMap<E, ZmqSocketAddr>) -> Result<Self, transport::Error> {
-        let mut sessions: HashMap<E, session::Raw<_, _>> = none!();
+    pub fn with(
+        endpoints: HashMap<E, ServiceAddr>,
+        ctx: &zmq::Context,
+    ) -> Result<Self, transport::Error> {
+        let mut sessions: HashMap<E, LocalSession> = none!();
         for (service, endpoint) in endpoints {
             sessions.insert(
                 service,
-                session::Raw::with_zmq_unencrypted(ZmqType::Req, &endpoint, None, None)?,
+                LocalSession::connect(ZmqSocketType::Req, &endpoint, None, None, ctx)?,
             );
         }
         let unmarshaller = A::Reply::create_unmarshaller();
@@ -51,8 +56,10 @@ where
 
     pub fn request(&mut self, endpoint: E, request: A::Request) -> Result<A::Reply, Error> {
         let data = request.serialize();
-        let session =
-            self.sessions.get_mut(&endpoint).ok_or(Error::UnknownEndpoint(endpoint.to_string()))?;
+        let session = self
+            .sessions
+            .get_mut(&endpoint)
+            .ok_or_else(|| Error::UnknownEndpoint(endpoint.to_string()))?;
         session.send_raw_message(&data)?;
         let raw = session.recv_raw_message()?;
         let reply = self.unmarshaller.unmarshall(Cursor::new(raw))?;

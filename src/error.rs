@@ -49,7 +49,7 @@ impl From<io::Error> for ConfigInitError {
 
 /// Errors which may happen during bootstrap phase of an application or a
 /// daemon, with a support for application-specific errors added as a generic
-/// parameter and [`BootstrapError:AppLevel`] variant
+/// parameter and [`BootstrapError::AppLevel`] variant
 #[cfg(feature = "_config")]
 #[derive(Debug, Display, Error, From)]
 #[display(doc_comments)]
@@ -115,7 +115,9 @@ where
 
 /// Errors which may happen during daemon runtime execution within
 /// [`TryService`] run loop. Supports application-specific errors, which may be
-/// added as a generic parameter and [`RuntimeError:AppLevel`] variant
+/// added as a generic parameter and [`RuntimeError::AppLevel`] variant
+///
+/// [`TryService`]: crate::node::TryService
 #[cfg(feature = "node")]
 #[derive(Clone, Debug, Display, Error, From)]
 #[display(doc_comments)]

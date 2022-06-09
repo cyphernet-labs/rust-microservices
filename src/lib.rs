@@ -45,7 +45,7 @@ extern crate clap;
 #[cfg_attr(feature = "_rpc", macro_use)]
 extern crate log;
 #[cfg(feature = "zmq")]
-extern crate zmq_crate as zmq;
+extern crate zmq2 as zmq;
 
 pub mod error;
 #[cfg(feature = "_rpc")]
@@ -58,12 +58,8 @@ pub mod node;
 pub mod peer;
 #[cfg(feature = "_rpc")]
 pub mod rpc;
-#[cfg(feature = "_rpc")]
-pub mod rpc_connection;
 #[cfg(feature = "shell")]
 pub mod shell;
 
 #[cfg(feature = "shell")]
 pub use format::{BinaryFormat, FileFormat, FormatParseError, StructuredFormat};
-#[cfg(feature = "_rpc")]
-pub use rpc_connection::RpcConnection;

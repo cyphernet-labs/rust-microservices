@@ -15,11 +15,12 @@ mod controller;
 use std::fmt::{Debug, Display};
 use std::hash::Hash;
 
-pub use controller::{Controller, EndpointList, Handler};
-use internet2::{presentation, transport, zmqsocket};
+pub use controller::{Controller, EndpointList, Handler, PollItem};
+use internet2::addr::ServiceAddr;
+use internet2::{presentation, transport, zeromq};
 
 /// Marker traits for service bus identifiers
-pub trait BusId: Copy + Eq + Hash + Display {
+pub trait BusId: Copy + Eq + Hash + Debug + Display {
     /// Service address type used by this bus
     type Address: ServiceAddress;
 }
@@ -28,10 +29,10 @@ pub struct BusConfig<A>
 where
     A: ServiceAddress,
 {
-    pub carrier: zmqsocket::Carrier,
+    pub carrier: zeromq::Carrier,
     pub router: Option<A>,
     /// Indicates whether the messages must be queued, or the send function
-    /// must fail immediatelly if the remote point is not avaliable
+    /// must fail immediately if the remote point is not available
     pub queued: bool,
 }
 
@@ -39,12 +40,12 @@ impl<A> BusConfig<A>
 where
     A: ServiceAddress,
 {
-    pub fn with_locator(locator: zmqsocket::ZmqSocketAddr, router: Option<A>) -> Self {
-        Self { carrier: zmqsocket::Carrier::Locator(locator), router, queued: false }
+    pub fn with_addr(addr: ServiceAddr, router: Option<A>) -> Self {
+        Self { carrier: zeromq::Carrier::Locator(addr), router, queued: false }
     }
 
     pub fn with_socket(socket: zmq::Socket, router: Option<A>) -> Self {
-        Self { carrier: zmqsocket::Carrier::Socket(socket), router, queued: false }
+        Self { carrier: zeromq::Carrier::Socket(socket), router, queued: false }
     }
 }
 

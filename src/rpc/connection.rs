@@ -13,9 +13,10 @@
 
 use std::fmt::{Debug, Display};
 
+use internet2::addr::ServiceAddr;
 use internet2::presentation::{CreateUnmarshaller, Error, TypedEnum};
-use internet2::session::{Connect, Session};
-use internet2::{LocalNode, ToNodeAddr};
+use internet2::session::LocalSession;
+use internet2::{SendRecvMessage, ZmqSocketType};
 
 /// Marker trait for LNP RPC requests
 pub trait Request: Debug + Display + TypedEnum + CreateUnmarshaller {}
@@ -38,7 +39,7 @@ where
     A: Api,
 {
     api: A,
-    session: Box<dyn Session>,
+    session: Box<dyn SendRecvMessage>,
 }
 
 impl<A> RpcConnection<A>
@@ -47,23 +48,25 @@ where
 {
     pub fn connect(
         api: A,
-        remote: impl ToNodeAddr,
-        local: &LocalNode,
-        default_port: u16,
+        // TODO: Convert parameter to ServiceAddr once RpcSession will be complete
+        remote: &ServiceAddr,
+        local: &ServiceAddr,
+        ctx: &zmq::Context,
     ) -> Result<Self, Error> {
-        let endpoint = remote.to_node_addr(default_port).ok_or(Error::InvalidEndpoint)?;
-        let session = endpoint.connect(local)?;
+        // TODO: Use RpcSession once its implementation is complete
+        let session =
+            Box::new(LocalSession::connect(ZmqSocketType::Req, remote, Some(local), None, ctx)?);
         Ok(Self { api, session })
     }
 
     pub fn accept(
         api: A,
-        addr: impl ToNodeAddr,
-        node: &LocalNode,
-        default_port: u16,
+        remote: &ServiceAddr,
+        local: &ServiceAddr,
+        ctx: &zmq::Context,
     ) -> Result<Self, Error> {
-        let endpoint = addr.to_node_addr(default_port).ok_or(Error::InvalidEndpoint)?;
-        let session = endpoint.connect(node)?;
+        let session =
+            Box::new(LocalSession::connect(ZmqSocketType::Rep, remote, Some(local), None, ctx)?);
         Ok(Self { api, session })
     }
 }
