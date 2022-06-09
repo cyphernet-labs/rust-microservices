@@ -21,8 +21,7 @@ use amplify::Bipolar;
 use internet2::presentation::{Error, Unmarshall};
 use internet2::session::{self, Connect, LocalNode, PlainTranscoder, Session, Split, ToNodeAddr};
 use internet2::transport::{brontide, zmqsocket};
-use internet2::{ftcp, NoiseTranscoder, LIGHTNING_P2P_DEFAULT_PORT};
-use lightning_encoding::LightningEncode;
+use internet2::{ftcp, NoiseTranscoder, TypedEnum, LIGHTNING_P2P_DEFAULT_PORT};
 
 pub trait RecvMessage {
     fn recv_message<D>(&mut self, d: &D) -> Result<D::Data, Error>
@@ -33,7 +32,7 @@ pub trait RecvMessage {
 }
 
 pub trait SendMessage {
-    fn send_message(&mut self, message: impl LightningEncode + Display) -> Result<usize, Error>;
+    fn send_message(&mut self, message: impl TypedEnum + Display) -> Result<usize, Error>;
 }
 
 pub struct PeerConnection {
@@ -82,11 +81,11 @@ impl RecvMessage for PeerConnection {
 }
 
 impl SendMessage for PeerConnection {
-    fn send_message(&mut self, message: impl LightningEncode + Display) -> Result<usize, Error> {
+    fn send_message(&mut self, message: impl TypedEnum + Display) -> Result<usize, Error> {
         debug!("Sending LN message to the remote peer: {}", message);
-        let data = &message.lightning_serialize()?;
+        let data = message.serialize();
         trace!("Lightning-encoded message representation: {:?}", data);
-        Ok(self.session.send_raw_message(data)?)
+        Ok(self.session.send_raw_message(&data)?)
     }
 }
 
@@ -107,11 +106,11 @@ impl RecvMessage for PeerReceiver {
 }
 
 impl SendMessage for PeerSender {
-    fn send_message(&mut self, message: impl LightningEncode + Display) -> Result<usize, Error> {
+    fn send_message(&mut self, message: impl TypedEnum + Display) -> Result<usize, Error> {
         debug!("Sending LN message to the remote peer: {}", message);
-        let data = &message.lightning_serialize()?;
+        let data = message.serialize();
         trace!("Lightning-encoded message representation: {:?}", data);
-        Ok(self.sender.send_raw_message(data)?)
+        Ok(self.sender.send_raw_message(&data)?)
     }
 }
 
