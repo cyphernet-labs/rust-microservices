@@ -20,8 +20,9 @@ use internet2::{
     ZmqSocketType,
 };
 
-use super::{Api, EndpointId, Error, Failure};
+use super::{Api, EndpointId, Failure};
 use crate::node::TryService;
+use crate::rpc::ClientError;
 
 /// Trait for types handling specific set of RPC API requests structured as a
 /// single type implementing [`Request`]. They must return a corresponding reply
@@ -36,7 +37,7 @@ where
     E: EndpointId,
 {
     type Api: Api;
-    type Error: crate::error::Error + Into<Failure>;
+    type Error: crate::error::Error + Into<Failure<<Self::Api as Api>::FailureCodeExt>>;
 
     /// Function that processes specific request and returns either response or
     /// a error that can be converted into a failure response
@@ -46,14 +47,14 @@ where
         request: <Self::Api as Api>::Request,
     ) -> Result<<Self::Api as Api>::Reply, Self::Error>;
 
-    fn handle_err(&mut self, error: Error) -> Result<(), Error>;
+    fn handle_err(&mut self, error: ClientError) -> Result<(), ClientError>;
 }
 
 pub struct RpcServer<E, A, H>
 where
     A: Api,
-    H::Error: Into<Failure>,
-    A::Reply: From<Failure>,
+    H::Error: Into<Failure<A::FailureCodeExt>>,
+    A::Reply: From<Failure<A::FailureCodeExt>>,
     E: EndpointId,
     H: Handler<E, Api = A>,
 {
@@ -66,8 +67,8 @@ where
 impl<E, A, H> RpcServer<E, A, H>
 where
     A: Api,
-    H::Error: Into<Failure>,
-    A::Reply: From<Failure>,
+    H::Error: Into<Failure<A::FailureCodeExt>>,
+    A::Reply: From<Failure<A::FailureCodeExt>>,
     E: EndpointId,
     H: Handler<E, Api = A>,
 {
@@ -97,12 +98,12 @@ where
 impl<E, A, H> TryService for RpcServer<E, A, H>
 where
     A: Api,
-    H::Error: Into<Failure>,
-    A::Reply: From<Failure>,
+    H::Error: Into<Failure<A::FailureCodeExt>>,
+    A::Reply: From<Failure<A::FailureCodeExt>>,
     E: EndpointId,
     H: Handler<E, Api = A>,
 {
-    type ErrorType = Error;
+    type ErrorType = ClientError;
 
     fn try_run_loop(mut self) -> Result<(), Self::ErrorType> {
         loop {
@@ -120,12 +121,12 @@ where
 impl<E, A, H> RpcServer<E, A, H>
 where
     A: Api,
-    H::Error: Into<Failure>,
-    A::Reply: From<Failure>,
+    H::Error: Into<Failure<A::FailureCodeExt>>,
+    A::Reply: From<Failure<A::FailureCodeExt>>,
     E: EndpointId,
     H: Handler<E, Api = A>,
 {
-    fn run(&mut self) -> Result<(), Error> {
+    fn run(&mut self) -> Result<(), ClientError> {
         let mut index = vec![];
         let mut items = self
             .sessions

@@ -21,8 +21,9 @@ use internet2::{
     ZmqSocketType,
 };
 
-use super::{EndpointId, Error};
+use super::EndpointId;
 use crate::rpc::connection::Api;
+use crate::rpc::ServerError;
 
 pub struct RpcClient<E, A>
 where
@@ -54,12 +55,16 @@ where
         Ok(Self { sessions, unmarshaller })
     }
 
-    pub fn request(&mut self, endpoint: E, request: A::Request) -> Result<A::Reply, Error> {
+    pub fn request(
+        &mut self,
+        endpoint: E,
+        request: A::Request,
+    ) -> Result<A::Reply, ServerError<A::FailureCodeExt>> {
         let data = request.serialize();
         let session = self
             .sessions
             .get_mut(&endpoint)
-            .ok_or_else(|| Error::UnknownEndpoint(endpoint.to_string()))?;
+            .ok_or_else(|| ServerError::UnknownEndpoint(endpoint.to_string()))?;
         session.send_raw_message(&data)?;
         let raw = session.recv_raw_message()?;
         let reply = self.unmarshaller.unmarshall(Cursor::new(raw))?;

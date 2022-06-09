@@ -18,6 +18,8 @@ use internet2::presentation::{CreateUnmarshaller, Error, TypedEnum};
 use internet2::session::LocalSession;
 use internet2::{SendRecvMessage, ZmqSocketType};
 
+use crate::rpc::FailureCodeExt;
+
 /// Marker trait for LNP RPC requests
 pub trait Request: Debug + Display + TypedEnum + CreateUnmarshaller {}
 
@@ -31,6 +33,9 @@ pub trait Api {
 
     /// Replies supported by RPC API
     type Reply: Reply;
+
+    /// Extended failure codes which are service-specific
+    type FailureCodeExt: FailureCodeExt;
 }
 
 #[allow(dead_code)]

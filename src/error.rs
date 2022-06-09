@@ -133,7 +133,7 @@ where
 
     /// RPC error during communications with the remote peer: {0}
     #[from]
-    Rpc(rpc::Error),
+    Rpc(rpc::ClientError),
 
     /// Application-level runtime error: {0}
     #[from]
