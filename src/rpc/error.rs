@@ -11,10 +11,9 @@
 // along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-#![allow(clippy::init_numbered_fields)]
-
 use std::fmt::{self, Debug, Display, Formatter};
 use std::hash::Hash;
+use std::io::{Read, Write};
 use std::num::ParseIntError;
 use std::str::FromStr;
 
@@ -29,26 +28,10 @@ use crate::error::RuntimeError;
 ///
 /// NB: Failure codes must be within the range 0..=0x0FFF, since the upper 8 bits are always removed
 /// from the service-specific code; codes 0x1000-0xFFFF are reserved for the system use.
-pub trait FailureCodeExt:
-    Copy
-    + Eq
-    + Ord
-    + Hash
-    + Debug
-    + Display
-    + FromStr
-    + Into<u16>
-    + From<u16>
-    + StrictEncode
-    + StrictDecode
-    + LightningEncode
-    + LightningDecode
-{
-}
+pub trait FailureCodeExt: Copy + Eq + Ord + Hash + Debug + Into<u16> + From<u16> {}
 
 /// Symbolic representation of a failure code returned by the server
 #[derive(Clone, Copy, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
-#[derive(StrictEncode, StrictDecode, LightningEncode, LightningDecode)]
 pub enum FailureCode<Ext>
 where
     Ext: FailureCodeExt,
@@ -67,6 +50,62 @@ where
     Other(Ext),
 }
 
+impl<Ext> StrictEncode for FailureCode<Ext>
+where
+    Ext: FailureCodeExt,
+{
+    fn strict_encode<E: Write>(&self, e: E) -> Result<usize, strict_encoding::Error> {
+        u16::from(*self).strict_encode(e)
+    }
+}
+
+impl<Ext> StrictDecode for FailureCode<Ext>
+where
+    Ext: FailureCodeExt,
+{
+    fn strict_decode<D: Read>(d: D) -> Result<Self, strict_encoding::Error> {
+        Ok(u16::strict_decode(d)?.into())
+    }
+}
+
+impl<Ext> LightningEncode for FailureCode<Ext>
+where
+    Ext: FailureCodeExt,
+{
+    fn lightning_encode<E: Write>(&self, e: E) -> Result<usize, lightning_encoding::Error> {
+        u16::from(*self).lightning_encode(e)
+    }
+}
+
+impl<Ext> LightningDecode for FailureCode<Ext>
+where
+    Ext: FailureCodeExt,
+{
+    fn lightning_decode<D: Read>(d: D) -> Result<Self, lightning_encoding::Error> {
+        Ok(u16::lightning_decode(d)?.into())
+    }
+}
+
+impl<Ext> From<u16> for FailureCode<Ext>
+where
+    Ext: FailureCodeExt,
+{
+    fn from(code: u16) -> Self {
+        match code {
+            code if code == u16::from(FailureCode::<Ext>::Presentation) => {
+                FailureCode::Presentation
+            }
+            code if code == u16::from(FailureCode::<Ext>::Transport) => FailureCode::Transport,
+            code if code == u16::from(FailureCode::<Ext>::Framing) => FailureCode::Framing,
+            code if code == u16::from(FailureCode::<Ext>::UnexpectedRequest) => {
+                FailureCode::UnexpectedRequest
+            }
+            code if code == u16::from(FailureCode::<Ext>::Runtime) => FailureCode::Runtime,
+            code => FailureCode::Other(code.into()),
+        }
+    }
+}
+
 impl<Ext> Display for FailureCode<Ext>
 where
     Ext: FailureCodeExt,
@@ -82,18 +121,7 @@ where
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let code = u16::from_str_radix(s, 16)?;
-        Ok(match code {
-            code if code == u16::from(FailureCode::<Ext>::Presentation) => {
-                FailureCode::Presentation
-            }
-            code if code == u16::from(FailureCode::<Ext>::Transport) => FailureCode::Transport,
-            code if code == u16::from(FailureCode::<Ext>::Framing) => FailureCode::Framing,
-            code if code == u16::from(FailureCode::<Ext>::UnexpectedRequest) => {
-                FailureCode::UnexpectedRequest
-            }
-            code if code == u16::from(FailureCode::<Ext>::Runtime) => FailureCode::Runtime,
-            code => FailureCode::Other(code.into()),
-        })
+        Ok(FailureCode::from(code))
     }
 }
 
