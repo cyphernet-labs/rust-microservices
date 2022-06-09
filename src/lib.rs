@@ -45,7 +45,7 @@ extern crate clap;
 #[cfg_attr(feature = "_rpc", macro_use)]
 extern crate log;
 #[cfg(feature = "zmq")]
-extern crate zmq_crate as zmq;
+extern crate zmq2 as zmq;
 
 pub mod error;
 #[cfg(feature = "_rpc")]
