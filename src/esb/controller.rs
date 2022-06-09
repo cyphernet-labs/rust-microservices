@@ -14,8 +14,8 @@
 use std::collections::HashMap;
 use std::io::Cursor;
 
-use internet2::transport::zmqsocket;
-use internet2::{session, PlainTranscoder, Session, Unmarshall, Unmarshaller};
+use internet2::session::LocalSession;
+use internet2::{zeromq, SendRecvMessage, Unmarshall, Unmarshaller, ZmqSocketType};
 
 use super::{BusId, Error, ServiceAddress};
 use crate::esb::BusConfig;
@@ -57,8 +57,9 @@ struct Endpoint<A>
 where
     A: ServiceAddress,
 {
-    pub(self) session: session::Raw<PlainTranscoder, zmqsocket::Connection>,
+    pub(self) session: LocalSession,
     pub(self) router: Option<A>,
+    pub(self) context: zmq::Context,
 }
 
 impl<A> Endpoint<A>
@@ -94,7 +95,7 @@ where
 
     #[inline]
     pub(self) fn set_identity(&mut self, identity: A) -> Result<(), Error<A>> {
-        self.session.set_identity(&identity.into()).map_err(Error::from)
+        self.session.set_identity(&identity.into(), &self.context).map_err(Error::from)
     }
 }
 
@@ -145,7 +146,9 @@ where
     endpoints: EndpointList<B>,
     unmarshaller: Unmarshaller<R>,
     handler: H,
-    api_type: zmqsocket::ZmqType,
+    #[getter(as_copy)]
+    api_type: ZmqSocketType,
+    context: zmq::Context,
 }
 
 impl<B, R, H> Controller<B, R, H>
@@ -158,11 +161,12 @@ where
     pub fn with(
         service_bus: HashMap<B, BusConfig<B::Address>>,
         handler: H,
-        api_type: zmqsocket::ZmqType,
+        api_type: ZmqSocketType,
+        context: zmq::Context,
     ) -> Result<Self, Error<B::Address>> {
         let endpoints = EndpointList::new();
         let unmarshaller = R::create_unmarshaller();
-        let mut me = Self { endpoints, unmarshaller, handler, api_type };
+        let mut me = Self { endpoints, unmarshaller, handler, api_type, context };
         for (id, config) in service_bus {
             me.add_service_bus(id, config)?;
         }
@@ -175,24 +179,28 @@ where
         config: BusConfig<B::Address>,
     ) -> Result<(), Error<B::Address>> {
         let session = match config.carrier {
-            zmqsocket::Carrier::Locator(locator) => {
+            zeromq::Carrier::Locator(locator) => {
                 debug!(
                     "Creating ESB session for service {} located at {} with identity '{}'",
-                    &id,
-                    &locator,
+                    id,
+                    locator,
                     self.handler.identity()
                 );
-                let session = session::Raw::with_zmq_unencrypted(
+                // TODO: Replace with RpcSession once its impl is completed
+                let session = LocalSession::connect(
                     self.api_type,
                     &locator,
                     None,
                     Some(&self.handler.identity().into()),
+                    &self.context,
                 )?;
                 session
             }
-            zmqsocket::Carrier::Socket(socket) => {
+            // TODO: Replace with RpcSession once its impl is completed
+            zeromq::Carrier::Socket(socket) => {
                 debug!("Creating ESB session for service {}", &id);
-                session::Raw::from_zmq_socket_unencrypted(self.api_type, socket)
+                // TODO: Replace with RpcSession once its impl is completed
+                LocalSession::with_zmq_socket(self.api_type, socket)
             }
         };
         if !config.queued {
@@ -202,7 +210,7 @@ where
             Some(router) if router == self.handler.identity() => None,
             router => router,
         };
-        self.endpoints.0.insert(id, Endpoint { session, router });
+        self.endpoints.0.insert(id, Endpoint { session, router, context: self.context.clone() });
         Ok(())
     }
 

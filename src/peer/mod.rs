@@ -16,6 +16,7 @@ pub mod supervisor;
 
 use std::fmt::{Debug, Display};
 
+use internet2::addr::NodeAddr;
 use internet2::presentation::{Error, TypedEnum, Unmarshall, Unmarshaller};
 pub use peer_connection::{PeerConnection, PeerReceiver, PeerSender, RecvMessage, SendMessage};
 
@@ -28,16 +29,13 @@ pub enum PeerSocket {
     /// TCP socket, which may be IPv4- or IPv6-based. For Tor hidden services
     /// use IPv4 TCP port proxied as a Tor hidden service in `torrc`.
     #[display("--listen={0}")]
-    Listen(internet2::RemoteSocketAddr),
+    Listen(NodeAddr),
 
     /// The service should connect to the remote peer residing on the provided
     /// address, which may be either IPv4/v6 or Onion V2/v3 address (using
-    /// onion hidden services will require
-    /// DNS names, due to a censorship vulnerability issues and for avoiding
-    /// leaking any information about th elocal node to DNS resolvers, are not
-    /// supported.
+    /// IPv4 TCP port proxied as a Tor hidden service in `torrc`).
     #[display("--connect={0}")]
-    Connect(internet2::RemoteNodeAddr),
+    Connect(NodeAddr),
 }
 
 /// Trait for types handling specific LNP2P messages.

@@ -15,13 +15,13 @@
 use std::convert::TryFrom;
 use std::fmt::Debug;
 use std::net::{SocketAddr, TcpListener};
-use std::thread;
 use std::thread::JoinHandle;
+use std::{io, thread};
 
-use internet2::addr::InetSocketAddr;
-use internet2::{session, LocalNode, LocalSocketAddr, NodeAddr, RemoteNodeAddr, RemoteSocketAddr};
+use internet2::addr::{InetSocketAddr, LocalNode, NodeId};
+use internet2::session::noise::FramingProtocol;
+use internet2::session::BrontideSession;
 use nix::unistd::{fork, ForkResult, Pid};
-use secp256k1::PublicKey;
 
 use super::{PeerConnection, PeerSocket};
 
@@ -31,9 +31,9 @@ where
     Config: Clone + Debug,
 {
     pub config: Config,
-    pub id: NodeAddr,
-    pub local_id: PublicKey,
-    pub remote_id: Option<PublicKey>,
+    pub framing_protocol: FramingProtocol,
+    pub local_id: NodeId,
+    pub remote_id: Option<NodeId>,
     pub local_socket: Option<InetSocketAddr>,
     pub remote_socket: InetSocketAddr,
     pub connect: bool,
@@ -43,10 +43,10 @@ impl<Config> RuntimeParams<Config>
 where
     Config: Clone + Debug,
 {
-    fn with(config: Config, local_id: PublicKey) -> Self {
+    fn with(config: Config, local_id: NodeId, framing_protocol: FramingProtocol) -> Self {
         RuntimeParams {
             config,
-            id: NodeAddr::Local(LocalSocketAddr::Posix(s!(""))),
+            framing_protocol,
             local_id,
             remote_id: None,
             local_socket: None,
@@ -59,45 +59,45 @@ where
 pub fn run<Config, Error>(
     config: Config,
     threaded: bool,
-    local_node: &LocalNode,
+    framing_protocol: FramingProtocol,
+    local_node: LocalNode,
     peer_socket: PeerSocket,
     runtime: fn(connection: PeerConnection, params: RuntimeParams<Config>) -> Result<(), Error>,
 ) -> Result<(), Error>
 where
-    Config: 'static + Clone + Debug + std::marker::Send,
-    Error: 'static + std::error::Error + std::marker::Send + From<std::io::Error>,
+    Config: 'static + Clone + Debug + Send,
+    Error: 'static + std::error::Error + Send + From<io::Error> + From<internet2::transport::Error>,
 {
     debug!("Peer socket parameter interpreted as {}", peer_socket);
 
-    let mut params = RuntimeParams::with(config, local_node.node_id());
+    let mut params = RuntimeParams::with(config, local_node.node_id(), framing_protocol);
     match peer_socket {
-        PeerSocket::Listen(RemoteSocketAddr::Ftcp(inet_addr)) => {
+        PeerSocket::Listen(node_addr) => {
             info!("Running peer daemon in LISTEN mode");
 
             params.connect = false;
-            params.local_socket = Some(inet_addr);
-            params.id = NodeAddr::Remote(RemoteNodeAddr {
-                node_id: local_node.node_id(),
-                remote_addr: RemoteSocketAddr::Ftcp(inet_addr),
-            });
+            params.local_id = node_addr.id;
+            params.local_socket = Some(node_addr.addr);
 
-            spawner(params, inet_addr, threaded, local_node, runtime)?;
+            spawner(params, node_addr.addr, threaded, local_node, runtime)?;
         }
-        PeerSocket::Connect(remote_node_addr) => {
+        PeerSocket::Connect(node_addr) => {
             debug!("Running peer daemon in CONNECT mode");
 
             params.connect = true;
-            params.id = NodeAddr::Remote(remote_node_addr.clone());
-            params.remote_id = Some(remote_node_addr.node_id);
-            params.remote_socket = remote_node_addr.remote_addr.into();
+            params.remote_id = Some(node_addr.id);
+            params.remote_socket = node_addr.addr;
 
-            info!("Connecting to {}", &remote_node_addr);
-            let connection = PeerConnection::connect(remote_node_addr, &local_node)
-                .expect("Unable to connect to the remote peer");
+            info!("Connecting to {}", node_addr);
+            let connection = match framing_protocol {
+                FramingProtocol::Brontide => {
+                    PeerConnection::connect_brontide(local_node, node_addr)?
+                }
+                FramingProtocol::Brontozaur => {
+                    PeerConnection::connect_brontozaur(local_node, node_addr)?
+                }
+            };
             runtime(connection, params)?;
-        }
-        PeerSocket::Listen(_) => {
-            unimplemented!("we do not support non-TCP connections for the legacy lightning network")
         }
     }
 
@@ -116,7 +116,7 @@ fn spawner<Config, Error>(
     mut params: RuntimeParams<Config>,
     inet_addr: InetSocketAddr,
     threaded_daemons: bool,
-    local_node: &LocalNode,
+    local_node: LocalNode,
     runtime: fn(connection: PeerConnection, params: RuntimeParams<Config>) -> Result<(), Error>,
 ) -> Result<(), Error>
 where
@@ -144,7 +144,7 @@ where
         let node_sk = local_node.private_key();
         let init = move || {
             debug!("Establishing session with the remote");
-            let session = session::Raw::with_brontide(stream, node_sk, remote_socket_addr.into())
+            let session = BrontideSession::with(stream, node_sk, remote_socket_addr.into())
                 .expect("Unable to establish session with the remote peer");
             let connection = PeerConnection::with(session);
             runtime(connection, child_params)

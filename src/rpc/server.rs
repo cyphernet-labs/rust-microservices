@@ -14,10 +14,10 @@
 use std::collections::HashMap;
 use std::io::Cursor;
 
-use internet2::transport::zmqsocket;
+use internet2::session::LocalSession;
 use internet2::{
-    session, transport, CreateUnmarshaller, PlainTranscoder, Session, TypedEnum, Unmarshall,
-    Unmarshaller,
+    transport, zeromq, CreateUnmarshaller, SendRecvMessage, TypedEnum, Unmarshall, Unmarshaller,
+    ZmqSocketType,
 };
 
 use super::{EndpointId, Error, Failure};
@@ -55,7 +55,8 @@ where
     E: EndpointId,
     H: Handler<E, Api = A>,
 {
-    sessions: HashMap<E, session::Raw<PlainTranscoder, transport::zmqsocket::Connection>>,
+    // TODO: Replace with RpcSession once its implementation is complete
+    sessions: HashMap<E, LocalSession>,
     unmarshaller: Unmarshaller<A::Request>,
     handler: H,
 }
@@ -69,27 +70,20 @@ where
     H: Handler<E, Api = A>,
 {
     pub fn with(
-        endpoints: HashMap<E, zmqsocket::Carrier>,
+        endpoints: HashMap<E, zeromq::Carrier>,
         handler: H,
+        ctx: &zmq::Context,
     ) -> Result<Self, transport::Error> {
-        let mut sessions: HashMap<E, session::Raw<_, _>> = none!();
+        let mut sessions: HashMap<E, LocalSession> = none!();
         for (endpoint, carrier) in endpoints {
             sessions.insert(endpoint, match carrier {
-                zmqsocket::Carrier::Locator(locator) => {
-                    debug!(
-                        "Creating RPC session for endpoint {} located at {}",
-                        &endpoint, &locator
-                    );
-                    session::Raw::with_zmq_unencrypted(
-                        zmqsocket::ZmqType::Rep,
-                        &locator,
-                        None,
-                        None,
-                    )?
+                zeromq::Carrier::Locator(locator) => {
+                    debug!("Creating RPC session for endpoint {} located at {}", endpoint, locator);
+                    LocalSession::connect(ZmqSocketType::Rep, &locator, None, None, ctx)?
                 }
-                zmqsocket::Carrier::Socket(socket) => {
+                zeromq::Carrier::Socket(socket) => {
                     debug!("Creating RPC session for endpoint {}", &endpoint);
-                    session::Raw::from_zmq_socket_unencrypted(zmqsocket::ZmqType::Rep, socket)
+                    LocalSession::with_zmq_socket(ZmqSocketType::Rep, socket)
                 }
             });
         }
