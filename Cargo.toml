@@ -20,7 +20,7 @@ crate-type = ["rlib", "staticlib"]
 # LNP/BP libraries
 amplify = "3.12.0"
 secp256k1 = "0.22.1"
-internet2 = { version = "0.8.0-alpha.1", git = "https://github.com/Internet2-WG/rust-internet2", default-features = false, features = ["derive"] }
+internet2 = { version = "0.8.0-beta.1", default-features = false, features = ["derive"] }
 lightning_encoding = "0.7.1"
 strict_encoding = { version = "1.8.1", default-features = false, features = ["derive"] }
 # Serialization & parsing

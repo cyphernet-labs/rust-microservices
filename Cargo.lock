@@ -679,7 +679,8 @@ dependencies = [
 [[package]]
 name = "inet2_addr"
 version = "0.8.0-rc.1"
-source = "git+https://github.com/Internet2-WG/rust-internet2#e48950ce9e6819281dd37a31ecc2a5c9e934bfdb"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9116e31d9d11fb3c6555600b225073b69d0feaf5ac68ed4475b41a16d81a72dc"
 dependencies = [
  "amplify",
  "ed25519-dalek",
@@ -697,7 +698,8 @@ dependencies = [
 [[package]]
 name = "inet2_derive"
 version = "0.8.0-alpha.1"
-source = "git+https://github.com/Internet2-WG/rust-internet2#e48950ce9e6819281dd37a31ecc2a5c9e934bfdb"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4affaad8daf9de6267bafb368a3782c575ce2d75355eb6aa515a38ba7c50c98a"
 dependencies = [
  "amplify",
  "proc-macro2",
@@ -717,7 +719,8 @@ dependencies = [
 [[package]]
 name = "internet2"
 version = "0.8.0-beta.1"
-source = "git+https://github.com/Internet2-WG/rust-internet2#e48950ce9e6819281dd37a31ecc2a5c9e934bfdb"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2fb0007f9ca920d176903f038276f8dcf3462b13d1fa68bb0c94fb06fcac1b4b"
 dependencies = [
  "amplify",
  "bitcoin_hashes",
