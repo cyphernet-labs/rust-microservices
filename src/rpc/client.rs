@@ -56,8 +56,10 @@ where
 
     pub fn request(&mut self, endpoint: E, request: A::Request) -> Result<A::Reply, Error> {
         let data = request.serialize();
-        let session =
-            self.sessions.get_mut(&endpoint).ok_or(Error::UnknownEndpoint(endpoint.to_string()))?;
+        let session = self
+            .sessions
+            .get_mut(&endpoint)
+            .ok_or_else(|| Error::UnknownEndpoint(endpoint.to_string()))?;
         session.send_raw_message(&data)?;
         let raw = session.recv_raw_message()?;
         let reply = self.unmarshaller.unmarshall(Cursor::new(raw))?;

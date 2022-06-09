@@ -140,17 +140,17 @@ impl Bipolar for PeerConnection {
 
     fn split(self) -> (Self::Left, Self::Right) {
         let session = self.session.into_any();
-        let (input, output) = if let Some(_) = session.downcast_ref::<BrontozaurSession>() {
+        let (input, output) = if session.downcast_ref::<BrontozaurSession>().is_some() {
             let session = session
                 .downcast::<BrontozaurSession>()
                 .expect("downcast can't process type accepted by downcast_ref");
             (*session).split()
-        } else if let Some(_) = session.downcast_ref::<BrontideSession>() {
+        } else if session.downcast_ref::<BrontideSession>().is_some() {
             let session = session
                 .downcast::<BrontideSession>()
                 .expect("downcast can't process type accepted by downcast_ref");
             (*session).split()
-        } else if let Some(_) = session.downcast_ref::<LocalSession>() {
+        } else if session.downcast_ref::<LocalSession>().is_some() {
             let session = session
                 .downcast::<LocalSession>()
                 .expect("downcast can't process type accepted by downcast_ref");

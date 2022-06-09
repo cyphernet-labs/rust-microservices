@@ -99,6 +99,7 @@ where
     }
 }
 
+#[derive(Default)]
 pub struct EndpointList<B>(pub(self) HashMap<B, Endpoint<B::Address>>)
 where
     B: BusId;
@@ -119,7 +120,8 @@ where
     where
         R: Request,
     {
-        let session = self.0.get_mut(&bus_id).ok_or(Error::UnknownBusId(bus_id.to_string()))?;
+        let session =
+            self.0.get_mut(&bus_id).ok_or_else(|| Error::UnknownBusId(bus_id.to_string()))?;
         session.send_to(source, dest, request)
     }
 
@@ -130,7 +132,7 @@ where
     ) -> Result<(), Error<B::Address>> {
         self.0
             .get_mut(&bus_id)
-            .ok_or(Error::UnknownBusId(bus_id.to_string()))?
+            .ok_or_else(|| Error::UnknownBusId(bus_id.to_string()))?
             .set_identity(identity)
     }
 }
@@ -149,6 +151,17 @@ where
     #[getter(as_copy)]
     api_type: ZmqSocketType,
     context: zmq::Context,
+}
+
+#[derive(Debug)]
+pub struct PollItem<B, R>
+where
+    B: BusId,
+    R: Request,
+{
+    pub bus_id: B,
+    pub source: B::Address,
+    pub request: R,
 }
 
 impl<B, R, H> Controller<B, R, H>
@@ -187,14 +200,13 @@ where
                     self.handler.identity()
                 );
                 // TODO: Replace with RpcSession once its impl is completed
-                let session = LocalSession::connect(
+                LocalSession::connect(
                     self.api_type,
                     &locator,
                     None,
                     Some(&self.handler.identity().into()),
                     &self.context,
-                )?;
-                session
+                )?
             }
             // TODO: Replace with RpcSession once its impl is completed
             zeromq::Carrier::Socket(socket) => {
@@ -223,7 +235,7 @@ where
         self.endpoints.send_to(bus_id, self.handler.identity(), dest, request)
     }
 
-    pub fn recv_poll(&mut self) -> Result<Vec<(B, B::Address, H::Request)>, Error<B::Address>> {
+    pub fn recv_poll(&mut self) -> Result<Vec<PollItem<B, R>>, Error<B::Address>> {
         let mut vec = vec![];
         for bus_id in self.poll()? {
             let sender = self.endpoints.0.get_mut(&bus_id).expect("must exist, just indexed");
@@ -232,7 +244,7 @@ where
             let request = (&*self.unmarshaller.unmarshall(Cursor::new(routed_frame.msg))?).clone();
             let source = B::Address::from(routed_frame.src);
 
-            vec.push((bus_id, source, request));
+            vec.push(PollItem { bus_id, source, request });
         }
 
         Ok(vec)

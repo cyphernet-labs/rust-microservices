@@ -15,12 +15,12 @@ mod controller;
 use std::fmt::{Debug, Display};
 use std::hash::Hash;
 
-pub use controller::{Controller, EndpointList, Handler};
-use internet2::{presentation, transport, zeromq};
+pub use controller::{Controller, EndpointList, Handler, PollItem};
 use internet2::addr::ServiceAddr;
+use internet2::{presentation, transport, zeromq};
 
 /// Marker traits for service bus identifiers
-pub trait BusId: Copy + Eq + Hash + Display {
+pub trait BusId: Copy + Eq + Hash + Debug + Display {
     /// Service address type used by this bus
     type Address: ServiceAddress;
 }
