@@ -13,12 +13,14 @@
 
 #[cfg(feature = "client")]
 pub mod client;
+mod connection;
 #[cfg(feature = "node")]
 pub mod server;
 
 use std::fmt::{Debug, Display};
 use std::hash::Hash;
 
+pub use connection::{Api, Reply, Request, RpcConnection};
 use internet2::{presentation, transport};
 
 #[cfg(feature = "node")]

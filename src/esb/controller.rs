@@ -21,7 +21,7 @@ use super::{BusId, Error, ServiceAddress};
 use crate::esb::BusConfig;
 #[cfg(feature = "node")]
 use crate::node::TryService;
-use crate::rpc_connection::Request;
+use crate::rpc::connection::Request;
 
 /// Trait for types handling specific set of ESB RPC API requests structured as
 /// a single type implementing [`Request`].

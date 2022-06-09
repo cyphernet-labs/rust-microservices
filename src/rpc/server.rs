@@ -22,7 +22,7 @@ use internet2::{
 
 use super::{EndpointId, Error, Failure};
 use crate::node::TryService;
-use crate::rpc_connection::Api;
+use crate::rpc::connection::Api;
 
 /// Trait for types handling specific set of RPC API requests structured as a
 /// single type implementing [`Request`]. They must return a corresponding reply

@@ -22,7 +22,7 @@ use internet2::{
 };
 
 use super::{EndpointId, Error};
-use crate::rpc_connection::Api;
+use crate::rpc::connection::Api;
 
 pub struct RpcClient<E, A>
 where

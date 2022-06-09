@@ -11,14 +11,14 @@
 // along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-mod peer_connection;
+mod connection;
 pub mod supervisor;
 
 use std::fmt::{Debug, Display};
 
+pub use connection::{PeerConnection, PeerReceiver, PeerSender, RecvMessage, SendMessage};
 use internet2::addr::NodeAddr;
 use internet2::presentation::{Error, TypedEnum, Unmarshall, Unmarshaller};
-pub use peer_connection::{PeerConnection, PeerReceiver, PeerSender, RecvMessage, SendMessage};
 
 use crate::node::TryService;
 
