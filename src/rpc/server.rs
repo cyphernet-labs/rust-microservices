@@ -20,14 +20,16 @@ use internet2::{
     ZmqSocketType,
 };
 
-use super::{EndpointId, Error, Failure};
+use super::{Api, EndpointId, Error, Failure};
 use crate::node::TryService;
-use crate::rpc::connection::Api;
 
 /// Trait for types handling specific set of RPC API requests structured as a
 /// single type implementing [`Request`]. They must return a corresponding reply
 /// type implementing [`Reply`]. This request/replu pair is structured as an
-/// [`Api`] trait provided in form of associated type parameter
+/// [`Api`] trait provided in form of associated type parameter.
+///
+/// [`Request`]: super::Request
+/// [`Reply`]: super::Reply
 pub trait Handler<E>
 where
     Self: Sized,

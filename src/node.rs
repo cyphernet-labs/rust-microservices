@@ -24,13 +24,13 @@ pub trait Service {
 /// `TryService::ErrorType` errors; otherwise they should never return
 pub trait TryService: Sized {
     /// Type of the error which is produced in case of service failure and
-    /// is returned from the internal [`try_run_loop()`] procedure
+    /// is returned from the internal [`Self::try_run_loop`] method
     type ErrorType: Error;
 
     /// NB: Do not reimplement this one: the function keeps in check that if the
     /// failure happens during run loop, the program will panic reporting the
     /// failure. To implement the actual run loop please provide implementation
-    /// for [`try_run_loop()`]
+    /// for [`Self::try_run_loop`]
     fn run_or_panic(self, service_name: &str) {
         match self.try_run_loop() {
             Err(err) => {
