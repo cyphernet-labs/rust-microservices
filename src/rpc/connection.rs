@@ -19,6 +19,7 @@ use internet2::session::LocalSession;
 use internet2::{SendRecvMessage, ZmqSocketType};
 
 use crate::rpc::FailureCodeExt;
+use crate::ZMQ_CONTEXT;
 
 /// Marker trait for LNP RPC requests
 pub trait Request: Debug + Display + TypedEnum + CreateUnmarshaller {}
@@ -56,22 +57,26 @@ where
         // TODO: Convert parameter to ServiceAddr once RpcSession will be complete
         remote: &ServiceAddr,
         local: &ServiceAddr,
-        ctx: &zmq::Context,
     ) -> Result<Self, Error> {
         // TODO: Use RpcSession once its implementation is complete
-        let session =
-            Box::new(LocalSession::connect(ZmqSocketType::Req, remote, Some(local), None, ctx)?);
+        let session = Box::new(LocalSession::connect(
+            ZmqSocketType::Req,
+            remote,
+            Some(local),
+            None,
+            &ZMQ_CONTEXT,
+        )?);
         Ok(Self { api, session })
     }
 
-    pub fn accept(
-        api: A,
-        remote: &ServiceAddr,
-        local: &ServiceAddr,
-        ctx: &zmq::Context,
-    ) -> Result<Self, Error> {
-        let session =
-            Box::new(LocalSession::connect(ZmqSocketType::Rep, remote, Some(local), None, ctx)?);
+    pub fn accept(api: A, remote: &ServiceAddr, local: &ServiceAddr) -> Result<Self, Error> {
+        let session = Box::new(LocalSession::connect(
+            ZmqSocketType::Rep,
+            remote,
+            Some(local),
+            None,
+            &ZMQ_CONTEXT,
+        )?);
         Ok(Self { api, session })
     }
 }

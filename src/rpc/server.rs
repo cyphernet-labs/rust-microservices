@@ -23,6 +23,7 @@ use internet2::{
 use super::{Api, EndpointId, Failure};
 use crate::node::TryService;
 use crate::rpc::ClientError;
+use crate::ZMQ_CONTEXT;
 
 /// Trait for types handling specific set of RPC API requests structured as a
 /// single type implementing [`Request`]. They must return a corresponding reply
@@ -75,14 +76,13 @@ where
     pub fn with(
         endpoints: HashMap<E, zeromq::Carrier>,
         handler: H,
-        ctx: &zmq::Context,
     ) -> Result<Self, transport::Error> {
         let mut sessions: HashMap<E, LocalSession> = none!();
         for (endpoint, carrier) in endpoints {
             sessions.insert(endpoint, match carrier {
                 zeromq::Carrier::Locator(locator) => {
                     debug!("Creating RPC session for endpoint {} located at {}", endpoint, locator);
-                    LocalSession::connect(ZmqSocketType::Rep, &locator, None, None, ctx)?
+                    LocalSession::connect(ZmqSocketType::Rep, &locator, None, None, &ZMQ_CONTEXT)?
                 }
                 zeromq::Carrier::Socket(socket) => {
                     debug!("Creating RPC session for endpoint {}", &endpoint);

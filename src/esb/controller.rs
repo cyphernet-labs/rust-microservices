@@ -22,6 +22,7 @@ use crate::esb::BusConfig;
 #[cfg(feature = "node")]
 use crate::node::TryService;
 use crate::rpc::Request;
+use crate::ZMQ_CONTEXT;
 
 /// Trait for types handling specific set of ESB RPC API requests structured as
 /// a single type implementing [`Request`].
@@ -59,7 +60,6 @@ where
 {
     pub(self) session: LocalSession,
     pub(self) router: Option<A>,
-    pub(self) context: zmq::Context,
 }
 
 impl<A> Endpoint<A>
@@ -95,7 +95,7 @@ where
 
     #[inline]
     pub(self) fn set_identity(&mut self, identity: A) -> Result<(), Error<A>> {
-        self.session.set_identity(&identity.into(), &self.context).map_err(Error::from)
+        self.session.set_identity(&identity.into(), &ZMQ_CONTEXT).map_err(Error::from)
     }
 }
 
@@ -148,7 +148,6 @@ where
     endpoints: EndpointList<B>,
     unmarshaller: Unmarshaller<R>,
     handler: H,
-    context: zmq::Context,
 }
 
 #[derive(Debug)]
@@ -172,11 +171,10 @@ where
     pub fn with(
         service_bus: HashMap<B, BusConfig<B::Address>>,
         handler: H,
-        context: zmq::Context,
     ) -> Result<Self, Error<B::Address>> {
         let endpoints = EndpointList::new();
         let unmarshaller = R::create_unmarshaller();
-        let mut me = Self { endpoints, unmarshaller, handler, context };
+        let mut me = Self { endpoints, unmarshaller, handler };
         for (id, config) in service_bus {
             me.add_service_bus(id, config)?;
         }
@@ -202,7 +200,7 @@ where
                     &locator,
                     None,
                     Some(&self.handler.identity().into()),
-                    &self.context,
+                    &ZMQ_CONTEXT,
                 )?
             }
             // TODO: Replace with RpcSession once its impl is completed
@@ -219,7 +217,7 @@ where
             Some(router) if router == self.handler.identity() => None,
             router => router,
         };
-        self.endpoints.0.insert(id, Endpoint { session, router, context: self.context.clone() });
+        self.endpoints.0.insert(id, Endpoint { session, router });
         Ok(())
     }
 

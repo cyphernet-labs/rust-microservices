@@ -24,6 +24,7 @@ use internet2::{
 use super::EndpointId;
 use crate::rpc::connection::Api;
 use crate::rpc::ServerError;
+use crate::ZMQ_CONTEXT;
 
 pub struct RpcClient<E, A>
 where
@@ -40,15 +41,12 @@ where
     A: Api,
     E: EndpointId,
 {
-    pub fn with(
-        endpoints: HashMap<E, ServiceAddr>,
-        ctx: &zmq::Context,
-    ) -> Result<Self, transport::Error> {
+    pub fn with(endpoints: HashMap<E, ServiceAddr>) -> Result<Self, transport::Error> {
         let mut sessions: HashMap<E, LocalSession> = none!();
         for (service, endpoint) in endpoints {
             sessions.insert(
                 service,
-                LocalSession::connect(ZmqSocketType::Req, &endpoint, None, None, ctx)?,
+                LocalSession::connect(ZmqSocketType::Req, &endpoint, None, None, &ZMQ_CONTEXT)?,
             );
         }
         let unmarshaller = A::Reply::create_unmarshaller();
