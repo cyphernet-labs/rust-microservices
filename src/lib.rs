@@ -63,3 +63,5 @@ pub mod shell;
 
 #[cfg(feature = "shell")]
 pub use format::{BinaryFormat, FileFormat, FormatParseError, StructuredFormat};
+use once_cell::sync::Lazy;
+pub static ZMQ_CONTEXT: Lazy<zmq::Context> = Lazy::new(|| zmq::Context::new());
