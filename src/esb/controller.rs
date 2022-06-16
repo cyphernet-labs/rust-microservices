@@ -15,7 +15,7 @@ use std::collections::HashMap;
 use std::io::Cursor;
 
 use internet2::session::LocalSession;
-use internet2::{zeromq, SendRecvMessage, Unmarshall, Unmarshaller, ZmqSocketType};
+use internet2::{zeromq, SendRecvMessage, Unmarshall, Unmarshaller};
 
 use super::{BusId, Error, ServiceAddress};
 use crate::esb::BusConfig;
@@ -148,8 +148,6 @@ where
     endpoints: EndpointList<B>,
     unmarshaller: Unmarshaller<R>,
     handler: H,
-    #[getter(as_copy)]
-    api_type: ZmqSocketType,
     context: zmq::Context,
 }
 
@@ -174,12 +172,11 @@ where
     pub fn with(
         service_bus: HashMap<B, BusConfig<B::Address>>,
         handler: H,
-        api_type: ZmqSocketType,
         context: zmq::Context,
     ) -> Result<Self, Error<B::Address>> {
         let endpoints = EndpointList::new();
         let unmarshaller = R::create_unmarshaller();
-        let mut me = Self { endpoints, unmarshaller, handler, api_type, context };
+        let mut me = Self { endpoints, unmarshaller, handler, context };
         for (id, config) in service_bus {
             me.add_service_bus(id, config)?;
         }
@@ -201,7 +198,7 @@ where
                 );
                 // TODO: Replace with RpcSession once its impl is completed
                 LocalSession::connect(
-                    self.api_type,
+                    config.api_type,
                     &locator,
                     None,
                     Some(&self.handler.identity().into()),
@@ -212,7 +209,7 @@ where
             zeromq::Carrier::Socket(socket) => {
                 debug!("Creating ESB session for service {}", &id);
                 // TODO: Replace with RpcSession once its impl is completed
-                LocalSession::with_zmq_socket(self.api_type, socket)
+                LocalSession::with_zmq_socket(config.api_type, socket)
             }
         };
         if !config.queued {

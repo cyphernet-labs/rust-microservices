@@ -17,7 +17,7 @@ use std::hash::Hash;
 
 pub use controller::{Controller, EndpointList, Handler, PollItem};
 use internet2::addr::ServiceAddr;
-use internet2::{presentation, transport, zeromq};
+use internet2::{presentation, transport, zeromq, ZmqSocketType};
 
 /// Marker traits for service bus identifiers
 pub trait BusId: Copy + Eq + Hash + Debug + Display {
@@ -29,6 +29,7 @@ pub struct BusConfig<A>
 where
     A: ServiceAddress,
 {
+    pub api_type: ZmqSocketType,
     pub carrier: zeromq::Carrier,
     pub router: Option<A>,
     /// Indicates whether the messages must be queued, or the send function
@@ -40,12 +41,12 @@ impl<A> BusConfig<A>
 where
     A: ServiceAddress,
 {
-    pub fn with_addr(addr: ServiceAddr, router: Option<A>) -> Self {
-        Self { carrier: zeromq::Carrier::Locator(addr), router, queued: false }
+    pub fn with_addr(addr: ServiceAddr, api_type: ZmqSocketType, router: Option<A>) -> Self {
+        Self { api_type, carrier: zeromq::Carrier::Locator(addr), router, queued: false }
     }
 
-    pub fn with_socket(socket: zmq::Socket, router: Option<A>) -> Self {
-        Self { carrier: zeromq::Carrier::Socket(socket), router, queued: false }
+    pub fn with_socket(socket: zmq::Socket, api_type: ZmqSocketType, router: Option<A>) -> Self {
+        Self { api_type, carrier: zeromq::Carrier::Socket(socket), router, queued: false }
     }
 }
 
