@@ -32,6 +32,7 @@ settings = { version = "0.10", package = "config", optional = true }
 clap = { version = "3.1", optional = true, features = ["derive"] }
 log = { version = "0.4", features = ["max_level_trace", "release_max_level_debug"] }
 env_logger = "0.7"
+colored = { version = "2", optional = true }
 # Networking
 zmq2 = { package = "zmq2", version = "0.5", optional = true }
 nix = "0.19"
@@ -51,7 +52,7 @@ all = ["server", "cli", "tor", "serde", "peer"]
 # Server is a standalone application that runs daemon
 server = ["node", "shell"]
 # Command-line application feature
-cli = ["shell", "client", "serde"]
+cli = ["shell", "client", "serde", "colored"]
 
 # Embedded is an app that contains embedded node and that talks to it through
 # integration layer
