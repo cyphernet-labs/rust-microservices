@@ -46,7 +46,7 @@ extern crate log;
 #[cfg(feature = "zmq")]
 extern crate zmq2 as zmq;
 
-#[cfg(feature = "shell")]
+#[cfg(feature = "cli")]
 pub mod cli;
 pub mod error;
 #[cfg(feature = "_rpc")]

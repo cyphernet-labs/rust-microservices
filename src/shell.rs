@@ -140,7 +140,7 @@ pub trait Exec {
 /// # Panics
 ///
 /// Panics if the `data_dir` can't be created.
-pub fn sell_setup<'endpoints>(
+pub fn shell_setup<'endpoints>(
     verbosity: u8,
     endpoints: impl IntoIterator<Item = &'endpoints mut ServiceAddr>,
     data_dir: &mut PathBuf,
