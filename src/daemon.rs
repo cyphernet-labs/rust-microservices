@@ -99,22 +99,22 @@ impl<DaemonName: DaemonId> DaemonHandle<DaemonName> {
     }
 }
 
-pub trait DaemonId: Clone + Debug + Display {
+pub trait DaemonId: Clone + Debug + Display + Send + 'static {
     type RunError: std::error::Error + Send + 'static;
     type Config: Send + 'static;
 
     fn bin_name(&self) -> &'static str;
 
-    fn run_fn(&self) -> fn(config: Self::Config) -> Result<(), Self::RunError>;
+    fn run_impl(self, config: Self::Config) -> Result<(), Self::RunError>;
 
     fn thread_daemon(self, config: Self::Config) -> Result<DaemonHandle<Self>, DaemonError<Self>> {
         debug!("Spawning {} as a new thread", self);
 
-        let run = self.run_fn();
         let name = self.to_string();
+        let d = self.clone();
         thread::Builder::new()
             .name(self.to_string())
-            .spawn(move || match run(config) {
+            .spawn(move || match d.run_impl(config) {
                 Ok(_) => unreachable!("daemons should never terminate by themselves"),
                 Err(err) => {
                     error!("Daemon {} crashed: {}", name, err);
