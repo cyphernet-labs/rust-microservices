@@ -14,9 +14,11 @@
 //! Traits and structures simplifying creation of executable files, either for
 //! daemons or command-line tools
 
-use std::env;
+use std::path::PathBuf;
 use std::str::FromStr;
+use std::{env, fs};
 
+use internet2::addr::ServiceAddr;
 use log::LevelFilter;
 
 /// Represents desired logging verbodity level
@@ -126,4 +128,51 @@ pub trait Exec {
     type Error: std::error::Error;
     /// Main execution routine
     fn exec(self, client: &mut Self::Client) -> Result<(), Self::Error>;
+}
+
+/// Sets up command-line environment by assigning verbosity level to the logger
+/// and replacing `{data_dir}` and `pat.0` components with the provided
+/// `data_dir` and `pat.1` values. Also replaces the same patterns in the list
+/// of service endpoints, if IPC files are used.
+///
+/// Creates `data_dir`, if it does not exist.
+///
+/// # Panics
+///
+/// Panics if the `data_dir` can't be created.
+pub fn sell_setup<'endpoints>(
+    verbosity: u8,
+    endpoints: impl IntoIterator<Item = &'endpoints mut ServiceAddr>,
+    data_dir: &mut PathBuf,
+    pat: &[(impl AsRef<str>, impl AsRef<str>)],
+) {
+    LogLevel::from_verbosity_flag_count(verbosity).apply();
+
+    let mut data_dir_s = data_dir.display().to_string();
+    for (from, to) in pat {
+        data_dir_s = data_dir_s.replace(from.as_ref(), to.as_ref());
+    }
+    *data_dir = PathBuf::from(shellexpand::tilde(&data_dir_s).to_string());
+    let data_dir_s = data_dir.display().to_string();
+
+    fs::create_dir_all(&data_dir)
+        .unwrap_or_else(|_| panic!("Unable to access data directory '{}'", data_dir.display()));
+
+    for addr in endpoints.into_iter() {
+        if let ServiceAddr::Ipc(ref mut path) = addr {
+            shell_expand_dir(path, &data_dir_s, pat);
+        }
+    }
+}
+
+pub fn shell_expand_dir<'endpoints>(
+    path: &mut String,
+    data_dir: &str,
+    pat: &[(impl AsRef<str>, impl AsRef<str>)],
+) {
+    *path = path.replace("{data_dir}", data_dir);
+    *path = shellexpand::tilde(path).to_string();
+    for (from, to) in pat {
+        *path = path.replace(from.as_ref(), to.as_ref());
+    }
 }
