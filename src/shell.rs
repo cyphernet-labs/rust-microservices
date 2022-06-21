@@ -144,13 +144,13 @@ pub fn shell_setup<'endpoints>(
     verbosity: u8,
     endpoints: impl IntoIterator<Item = &'endpoints mut ServiceAddr>,
     data_dir: &mut PathBuf,
-    pat: &[(impl AsRef<str>, impl AsRef<str>)],
+    pat: &[(&str, String)],
 ) {
     LogLevel::from_verbosity_flag_count(verbosity).apply();
 
     let mut data_dir_s = data_dir.display().to_string();
     for (from, to) in pat {
-        data_dir_s = data_dir_s.replace(from.as_ref(), to.as_ref());
+        data_dir_s = data_dir_s.replace(from, to);
     }
     *data_dir = PathBuf::from(shellexpand::tilde(&data_dir_s).to_string());
     let data_dir_s = data_dir.display().to_string();
@@ -165,14 +165,10 @@ pub fn shell_setup<'endpoints>(
     }
 }
 
-pub fn shell_expand_dir<'endpoints>(
-    path: &mut String,
-    data_dir: &str,
-    pat: &[(impl AsRef<str>, impl AsRef<str>)],
-) {
+pub fn shell_expand_dir(path: &mut String, data_dir: &str, pat: &[(&str, String)]) {
     *path = path.replace("{data_dir}", data_dir);
     *path = shellexpand::tilde(path).to_string();
     for (from, to) in pat {
-        *path = path.replace(from.as_ref(), to.as_ref());
+        *path = path.replace(from, to);
     }
 }
