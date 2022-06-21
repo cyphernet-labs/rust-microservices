@@ -12,7 +12,7 @@
 // If not, see <https://opensource.org/licenses/MIT>.
 
 //! LNP/BP library for building robust and scalable APIs, servers, nodes,
-//! clinets and cli utilities with LNP protocol, ZMQ and multi-threading
+//! clients and cli utilities with LNP protocol, ZMQ and multi-threading
 
 #![recursion_limit = "256"]
 // Coding conventions
@@ -21,14 +21,13 @@
     non_camel_case_types,
     non_snake_case,
     unused_mut,
-    unused_imports,
     dead_code,
     //missing_docs
 )]
 
-#[cfg_attr(any(feature = "_rpc", feature = "shell"), macro_use)]
-extern crate amplify;
 #[macro_use]
+extern crate amplify;
+#[cfg_attr(feature = "shell", macro_use)]
 extern crate strict_encoding;
 
 #[cfg(feature = "serde")]
@@ -65,9 +64,13 @@ pub mod rpc;
 #[cfg(feature = "shell")]
 pub mod shell;
 
-#[cfg(feature = "shell")]
-pub use format::{BinaryFormat, FileFormat, FormatParseError, StructuredFormat};
+#[cfg(feature = "zmq")]
 use once_cell::sync::Lazy;
-pub static ZMQ_CONTEXT: Lazy<zmq::Context> = Lazy::new(|| zmq::Context::new());
+
+#[cfg(feature = "shell")]
+pub use crate::format::{BinaryFormat, FileFormat, FormatParseError, StructuredFormat};
 #[cfg(feature = "node")]
-pub use launcher::{DaemonHandle, Launcher, LauncherError};
+pub use crate::launcher::{DaemonHandle, Launcher, LauncherError};
+
+#[cfg(feature = "zmq")]
+pub static ZMQ_CONTEXT: Lazy<zmq::Context> = Lazy::new(|| zmq::Context::new());
