@@ -11,18 +11,17 @@
 // along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-use std::ffi::OsStr;
 use std::fmt::{self, Debug, Display};
-use std::process::ExitStatus;
+use std::process::{Command, ExitStatus};
 use std::thread::JoinHandle;
 use std::{process, thread};
 
 use amplify::IoError;
 use internet2::transport;
 
-/// Handle for a daemon launched by LNPd
+/// Handle for a launched daemon/service
 #[derive(Debug)]
-pub enum DaemonHandle<DaemonName: DaemonId> {
+pub enum DaemonHandle<DaemonName: Launcher> {
     /// Daemon launched as a separate process
     Process(DaemonName, process::Child),
 
@@ -30,7 +29,7 @@ pub enum DaemonHandle<DaemonName: DaemonId> {
     Thread(DaemonName, thread::JoinHandle<Result<(), DaemonName::RunError>>),
 }
 
-impl<DaemonName: DaemonId> Display for DaemonHandle<DaemonName> {
+impl<DaemonName: Launcher> Display for DaemonHandle<DaemonName> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             DaemonHandle::Process(name, child) => write!(f, "{} PID #{}", name, child.id()),
@@ -44,7 +43,7 @@ impl<DaemonName: DaemonId> Display for DaemonHandle<DaemonName> {
 /// Errors during daemon launching
 #[derive(Debug, Error, Display, From)]
 #[display(doc_comments)]
-pub enum DaemonError<DaemonName: DaemonId> {
+pub enum LauncherError<DaemonName: Launcher> {
     /// Tor is not yet supported
     #[from(transport::Error)]
     TorNotSupportedYet,
@@ -67,7 +66,7 @@ pub enum DaemonError<DaemonName: DaemonId> {
     ProcessLaunch(DaemonName, IoError),
 }
 
-impl<DaemonName: DaemonId> DaemonHandle<DaemonName> {
+impl<DaemonName: Launcher> DaemonHandle<DaemonName> {
     /// Waits for daemon execution completion on the handler.
     ///
     /// # Returns
@@ -79,35 +78,40 @@ impl<DaemonName: DaemonId> DaemonHandle<DaemonName> {
     /// - if the thread failed to start;
     /// - if it failed to join the thread;
     /// - if the process exit status was not 0
-    pub fn join(self) -> Result<(), DaemonError<DaemonName>> {
+    pub fn join(self) -> Result<(), LauncherError<DaemonName>> {
         match self {
             DaemonHandle::Process(name, mut proc) => proc
                 .wait()
-                .map_err(|io| DaemonError::ProcessLaunch(name.clone(), io.into()))
+                .map_err(|io| LauncherError::ProcessLaunch(name.clone(), io.into()))
                 .and_then(|status| {
                     if status.success() {
                         Ok(())
                     } else {
-                        Err(DaemonError::ProcessAborted(name, status))
+                        Err(LauncherError::ProcessAborted(name, status))
                     }
                 }),
             DaemonHandle::Thread(name, thread) => thread
                 .join()
-                .map_err(|_| DaemonError::ThreadJoin(name.clone()))?
-                .map_err(|err| DaemonError::ThreadAborted(name, err)),
+                .map_err(|_| LauncherError::ThreadJoin(name.clone()))?
+                .map_err(|err| LauncherError::ThreadAborted(name, err)),
         }
     }
 }
 
-pub trait DaemonId: Clone + Debug + Display + Send + 'static {
+pub trait Launcher: Clone + Debug + Display + Send + 'static {
     type RunError: std::error::Error + Send + 'static;
     type Config: Send + 'static;
 
     fn bin_name(&self) -> &'static str;
 
+    fn cmd_args(&self, cmd: &mut Command) -> Result<(), LauncherError<Self>>;
+
     fn run_impl(self, config: Self::Config) -> Result<(), Self::RunError>;
 
-    fn thread_daemon(self, config: Self::Config) -> Result<DaemonHandle<Self>, DaemonError<Self>> {
+    fn thread_daemon(
+        self,
+        config: Self::Config,
+    ) -> Result<DaemonHandle<Self>, LauncherError<Self>> {
         debug!("Spawning {} as a new thread", self);
 
         let name = self.to_string();
@@ -121,20 +125,14 @@ pub trait DaemonId: Clone + Debug + Display + Send + 'static {
                     Err(err)
                 }
             })
-            .map_err(|io| DaemonError::ThreadLaunch(self.clone(), io.into()))
+            .map_err(|io| LauncherError::ThreadLaunch(self.clone(), io.into()))
             .map(|handle: JoinHandle<Result<(), _>>| DaemonHandle::Thread(self, handle))
     }
 
-    fn exec_daemon<S>(
-        self,
-        args: impl IntoIterator<Item = S>,
-    ) -> Result<DaemonHandle<Self>, DaemonError<Self>>
-    where
-        S: AsRef<OsStr>,
-    {
+    fn exec_daemon(self) -> Result<DaemonHandle<Self>, LauncherError<Self>> {
         let mut bin_path = std::env::current_exe().map_err(|err| {
             error!("Unable to detect binary directory: {}", err);
-            DaemonError::ProcessLaunch(self.clone(), err.into())
+            LauncherError::ProcessLaunch(self.clone(), err.into())
         })?;
         bin_path.pop();
         bin_path.push(self.bin_name());
@@ -144,13 +142,13 @@ pub trait DaemonId: Clone + Debug + Display + Send + 'static {
         debug!("Launching {} as a separate process using `{}` as binary", self, bin_path.display());
 
         let mut cmd = process::Command::new(bin_path);
-        cmd.args(args);
+        self.cmd_args(&mut cmd)?;
 
         trace!("Executing `{:?}`", cmd);
         cmd.spawn()
             .map_err(|err| {
                 error!("Error launching {}: {}", self, err);
-                DaemonError::ProcessLaunch(self.clone(), err.into())
+                LauncherError::ProcessLaunch(self.clone(), err.into())
             })
             .map(|process| DaemonHandle::Process(self, process))
     }

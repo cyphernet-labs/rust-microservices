@@ -47,13 +47,13 @@ extern crate log;
 #[cfg(feature = "zmq")]
 extern crate zmq2 as zmq;
 
-#[cfg(feature = "node")]
-mod daemon;
 pub mod error;
 #[cfg(feature = "_rpc")]
 pub mod esb;
 #[cfg(feature = "shell")]
 mod format;
+#[cfg(feature = "node")]
+mod launcher;
 #[cfg(feature = "node")]
 pub mod node;
 #[cfg(feature = "peer")]
@@ -68,4 +68,4 @@ pub use format::{BinaryFormat, FileFormat, FormatParseError, StructuredFormat};
 use once_cell::sync::Lazy;
 pub static ZMQ_CONTEXT: Lazy<zmq::Context> = Lazy::new(|| zmq::Context::new());
 #[cfg(feature = "node")]
-pub use daemon::{DaemonError, DaemonHandle, DaemonId};
+pub use launcher::{DaemonHandle, Launcher, LauncherError};
