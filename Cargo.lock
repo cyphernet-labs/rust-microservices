@@ -873,7 +873,7 @@ dependencies = [
 
 [[package]]
 name = "microservices"
-version = "0.8.0-rc.5"
+version = "0.8.0-rc.6"
 dependencies = [
  "amplify",
  "clap",
