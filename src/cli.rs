@@ -18,25 +18,23 @@ use std::{fs, io};
 use colored::Colorize;
 
 pub trait LogStyle: ToString {
-    fn announce(&self) -> colored::ColoredString { self.to_string().bold().bright_blue() }
+    fn c_id(&self) -> colored::ColoredString { self.to_string().italic().bright_blue() }
 
-    fn announcer(&self) -> colored::ColoredString { self.to_string().italic().bright_blue() }
+    fn c_start(&self) -> colored::ColoredString { self.to_string().bright_blue() }
 
-    fn action(&self) -> colored::ColoredString { self.to_string().bold().yellow() }
+    fn c_progr(&self) -> colored::ColoredString { self.to_string().green() }
 
-    fn progress(&self) -> colored::ColoredString { self.to_string().bold().green() }
+    fn c_succ(&self) -> colored::ColoredString { self.to_string().bold().bright_green() }
 
-    fn ended(&self) -> colored::ColoredString { self.to_string().bold().bright_green() }
+    fn c_val(&self) -> colored::ColoredString { self.to_string().bold().bright_yellow() }
 
-    fn actor(&self) -> colored::ColoredString { self.to_string().italic().bright_green() }
+    fn c_addr(&self) -> colored::ColoredString { self.to_string().yellow() }
 
-    fn amount(&self) -> colored::ColoredString { self.to_string().bold().bright_yellow() }
+    fn c_err(&self) -> colored::ColoredString { self.to_string().bold().bright_red() }
 
-    fn addr(&self) -> colored::ColoredString { self.to_string().bold().bright_yellow() }
+    fn c_warn(&self) -> colored::ColoredString { self.to_string().bold().bright_yellow() }
 
-    fn err(&self) -> colored::ColoredString { self.to_string().bold().bright_red() }
-
-    fn err_details(&self) -> colored::ColoredString { self.to_string().bold().red() }
+    fn c_info(&self) -> colored::ColoredString { self.to_string().bold() }
 }
 
 impl<T> LogStyle for T where T: ToString {}
