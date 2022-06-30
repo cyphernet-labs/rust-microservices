@@ -1,6 +1,6 @@
 [package]
 name = "microservices"
-version = "0.8.0-rc.9"
+version = "0.8.0"
 license = "Apache-2.0"
 authors = ["Dr Maxim Orlovsky <orlovsky@pandoracore.com>"]
 description = "LNP/BP support crate for devloping microservices"
@@ -18,18 +18,17 @@ crate-type = ["rlib", "staticlib"]
 
 [dependencies]
 # LNP/BP libraries
-amplify = "3.12.0"
+amplify = "3.12.1"
 secp256k1 = "0.22.1"
-internet2 = { version = "0.8.0-beta.1", default-features = false, features = ["derive"] }
-lightning_encoding = "0.7.1"
-strict_encoding = { version = "1.8.1", default-features = false, features = ["derive"] }
+internet2 = { version = "0.8.0", default-features = false, features = ["derive"] }
+lightning_encoding = "0.8.0"
+strict_encoding = { version = "0.8.0", default-features = false, features = ["derive"] }
 # Serialization & parsing
 serde_crate = { package = "serde", version = "1", features = ["derive"], optional = true }
 serde_with = { version = "1.8", optional = true, features = ["hex"] }
 toml = { version = "0.5", optional = true }
 # Congig
 settings = { version = "0.10", package = "config", optional = true }
-clap = { version = "3.1", optional = true, features = ["derive"] }
 log = { version = "0.4", features = ["max_level_trace", "release_max_level_debug"] }
 shellexpand = { version = "2.1", optional = true }
 env_logger = "0.7"
@@ -66,7 +65,7 @@ node = ["serde", "_config", "_rpc"]
 client = ["_rpc"]
 # Required for all apps that can be launched from command-line shell as binaries
 # (i.e. both servers and cli)
-shell = ["clap", "settings", "amplify/parse_arg", "serde", "_config", "shellexpand"]
+shell = ["settings", "amplify/parse_arg", "serde", "_config", "shellexpand"]
 
 # Internally used features for convenience
 _config = []
