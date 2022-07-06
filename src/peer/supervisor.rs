@@ -21,6 +21,7 @@ use std::{io, thread};
 use internet2::addr::{InetSocketAddr, LocalNode, NodeId};
 use internet2::session::noise::FramingProtocol;
 use internet2::session::BrontideSession;
+#[cfg(not(target_os = "windows"))]
 use nix::unistd::{fork, ForkResult, Pid};
 
 use super::{PeerConnection, PeerSocket};
@@ -109,6 +110,7 @@ where
     Error: std::error::Error,
 {
     Thread(JoinHandle<Result<(), Error>>),
+    #[cfg(not(target_os = "windows"))]
     Process(Pid),
 }
 
@@ -157,15 +159,20 @@ where
             handlers.push(Handler::Thread(handler));
             // We have started the thread so awaiting for the next incoming connection
         } else {
-            debug!("Forking child process");
-            if let ForkResult::Parent { child } =
-                unsafe { fork().expect("Unable to fork child process") }
+            #[cfg(target_os = "windows")]
+            panic!("windows do not (yet) supports multi-process configuration");
+            #[cfg(not(target_os = "windows"))]
             {
-                handlers.push(Handler::Process(child));
-                debug!("Child forked with pid {}; returning into main listener event loop", child);
-            } else {
-                init()?;
-                unreachable!("we are in the child process");
+                debug!("Forking child process");
+                if let ForkResult::Parent { child } =
+                unsafe { fork().expect("Unable to fork child process") }
+                {
+                    handlers.push(Handler::Process(child));
+                    debug!("Child forked with pid {}; returning into main listener event loop", child);
+                } else {
+                    init()?;
+                    unreachable!("we are in the child process");
+                }
             }
         }
         trace!("Total {} peerd are spawned for the incoming connections", handlers.len());
