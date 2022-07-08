@@ -63,6 +63,7 @@ pub mod peer;
 pub mod rpc;
 #[cfg(feature = "shell")]
 pub mod shell;
+pub mod util;
 
 #[cfg(feature = "zmq")]
 use once_cell::sync::Lazy;
