@@ -14,7 +14,7 @@
 mod bus;
 mod controller;
 
-pub use bus::{BusConfig, BusId, ServiceAddress};
+pub use bus::{BusConfig, BusId, ClientId, ServiceAddress, ServiceName};
 pub use controller::{Controller, EndpointList, Handler, PollItem};
 use internet2::{presentation, transport};
 
