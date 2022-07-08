@@ -11,50 +11,12 @@
 // along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
+mod bus;
 mod controller;
-use std::fmt::{Debug, Display};
-use std::hash::Hash;
 
+pub use bus::{BusConfig, BusId, ServiceAddress};
 pub use controller::{Controller, EndpointList, Handler, PollItem};
-use internet2::addr::ServiceAddr;
-use internet2::{presentation, transport, zeromq, ZmqSocketType};
-
-/// Marker traits for service bus identifiers
-pub trait BusId: Copy + Eq + Hash + Debug + Display {
-    /// Service address type used by this bus
-    type Address: ServiceAddress;
-}
-
-pub struct BusConfig<A>
-where
-    A: ServiceAddress,
-{
-    pub api_type: ZmqSocketType,
-    pub carrier: zeromq::Carrier,
-    pub router: Option<A>,
-    /// Indicates whether the messages must be queued, or the send function
-    /// must fail immediately if the remote point is not available
-    pub queued: bool,
-}
-
-impl<A> BusConfig<A>
-where
-    A: ServiceAddress,
-{
-    pub fn with_addr(addr: ServiceAddr, api_type: ZmqSocketType, router: Option<A>) -> Self {
-        Self { api_type, carrier: zeromq::Carrier::Locator(addr), router, queued: false }
-    }
-
-    pub fn with_socket(socket: zmq::Socket, api_type: ZmqSocketType, router: Option<A>) -> Self {
-        Self { api_type, carrier: zeromq::Carrier::Socket(socket), router, queued: false }
-    }
-}
-
-/// Marker traits for service bus identifiers
-pub trait ServiceAddress:
-    Clone + Eq + Hash + Debug + Display + Into<Vec<u8>> + From<Vec<u8>>
-{
-}
+use internet2::{presentation, transport};
 
 /// Errors happening with RPC APIs
 #[derive(Clone, Debug, Display, Error, From)]
