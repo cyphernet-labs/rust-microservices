@@ -35,7 +35,7 @@ where
     pub framing_protocol: FramingProtocol,
     pub local_id: NodeId,
     pub remote_id: Option<NodeId>,
-    pub local_socket: Option<InetSocketAddr>,
+    pub local_socket: Option<SocketAddr>,
     pub remote_socket: InetSocketAddr,
     pub connect: bool,
 }
@@ -73,14 +73,13 @@ where
 
     let mut params = RuntimeParams::with(config, local_node.node_id(), framing_protocol);
     match peer_socket {
-        PeerSocket::Listen(node_addr) => {
+        PeerSocket::Listen(socket_addr) => {
             info!("Running peer daemon in LISTEN mode");
 
             params.connect = false;
-            params.local_id = node_addr.id;
-            params.local_socket = Some(node_addr.addr);
+            params.local_socket = Some(socket_addr);
 
-            spawner(params, node_addr.addr, threaded, local_node, runtime)?;
+            spawner(params, socket_addr, threaded, local_node, runtime)?;
         }
         PeerSocket::Connect(node_addr) => {
             debug!("Running peer daemon in CONNECT mode");
@@ -116,7 +115,7 @@ where
 
 fn spawner<Config, Error>(
     mut params: RuntimeParams<Config>,
-    inet_addr: InetSocketAddr,
+    socket_addr: SocketAddr,
     threaded_daemons: bool,
     local_node: LocalNode,
     runtime: fn(connection: PeerConnection, params: RuntimeParams<Config>) -> Result<(), Error>,
@@ -128,9 +127,9 @@ where
     // Handlers for all of our spawned processes and threads
     let mut handlers = vec![];
 
-    info!("Binding TCP socket {}", inet_addr);
+    info!("Binding TCP socket {}", socket_addr);
     let listener =
-        TcpListener::bind(SocketAddr::try_from(inet_addr).expect("Tor is not yet supported"))
+        TcpListener::bind(SocketAddr::try_from(socket_addr).expect("Tor is not yet supported"))
             .expect("Unable to bind to Lightning network peer socket");
 
     info!("Running TCP listener event loop");
@@ -154,8 +153,9 @@ where
 
         if threaded_daemons {
             debug!("Spawning child thread");
-            let handler =
-                thread::Builder::new().name(format!("peerd-listner<{}>", inet_addr)).spawn(init)?;
+            let handler = thread::Builder::new()
+                .name(format!("peerd-listner<{}>", socket_addr))
+                .spawn(init)?;
             handlers.push(Handler::Thread(handler));
             // We have started the thread so awaiting for the next incoming connection
         } else {
@@ -165,10 +165,13 @@ where
             {
                 debug!("Forking child process");
                 if let ForkResult::Parent { child } =
-                unsafe { fork().expect("Unable to fork child process") }
+                    unsafe { fork().expect("Unable to fork child process") }
                 {
                     handlers.push(Handler::Process(child));
-                    debug!("Child forked with pid {}; returning into main listener event loop", child);
+                    debug!(
+                        "Child forked with pid {}; returning into main listener event loop",
+                        child
+                    );
                 } else {
                     init()?;
                     unreachable!("we are in the child process");

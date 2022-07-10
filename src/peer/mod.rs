@@ -15,6 +15,7 @@ mod connection;
 pub mod supervisor;
 
 use std::fmt::{Debug, Display};
+use std::net::SocketAddr;
 
 pub use connection::{PeerConnection, PeerReceiver, PeerSender, RecvMessage, SendMessage};
 use internet2::addr::NodeAddr;
@@ -29,11 +30,10 @@ pub enum PeerSocket {
     /// TCP socket, which may be IPv4- or IPv6-based. For Tor hidden services
     /// use IPv4 TCP port proxied as a Tor hidden service in `torrc`.
     #[display("--listen={0}")]
-    Listen(NodeAddr),
+    Listen(SocketAddr),
 
     /// The service should connect to the remote peer residing on the provided
-    /// address, which may be either IPv4/v6 or Onion V2/v3 address (using
-    /// IPv4 TCP port proxied as a Tor hidden service in `torrc`).
+    /// address, which may be either IPv4/v6 or Onion V2/v3 address.
     #[display("--connect={0}")]
     Connect(NodeAddr),
 }
