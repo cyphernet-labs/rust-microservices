@@ -1,6 +1,6 @@
 [package]
 name = "microservices"
-version = "0.8.5"
+version = "0.8.7"
 license = "Apache-2.0"
 authors = ["Dr Maxim Orlovsky <orlovsky@pandoracore.com>"]
 description = "LNP/BP support crate for devloping microservices"

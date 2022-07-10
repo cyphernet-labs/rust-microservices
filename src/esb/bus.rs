@@ -55,15 +55,15 @@ where
     pub fn with_subscription(
         addr: ServiceAddr,
         api_type: ZmqSocketType,
-        router: Option<A>,
-        topic: String, // TODO: Use optional
+        topic: Option<String>,
     ) -> Self {
         Self {
             api_type,
             carrier: zeromq::Carrier::Locator(addr),
-            router,
-            queued: false,
-            topic: Some(topic),
+            router: None,
+            queued: true, /* this doesn't work, but prevents from setting flag on PUB/SUB socket
+                           * which will always fail */
+            topic,
         }
     }
 
