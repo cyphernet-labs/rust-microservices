@@ -25,7 +25,6 @@ pub trait BusId: Copy + Eq + Hash + Debug + Display {
     type Address: ServiceAddress;
 }
 
-#[non_exhaustive]
 pub struct BusConfig<A>
 where
     A: ServiceAddress,
@@ -57,7 +56,7 @@ where
         addr: ServiceAddr,
         api_type: ZmqSocketType,
         router: Option<A>,
-        topic: String,
+        topic: String, // TODO: Use optional
     ) -> Self {
         Self {
             api_type,
