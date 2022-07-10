@@ -15,7 +15,7 @@ use std::collections::HashMap;
 use std::io::Cursor;
 
 use internet2::session::LocalSession;
-use internet2::{zeromq, SendRecvMessage, Unmarshall, Unmarshaller};
+use internet2::{zeromq, SendRecvMessage, Unmarshall, Unmarshaller, ZmqSocketType};
 
 use super::{BusId, Error, ServiceAddress};
 use crate::esb::BusConfig;
@@ -212,6 +212,9 @@ where
         };
         if !config.queued {
             session.as_socket().set_router_mandatory(true)?;
+        }
+        if config.api_type == ZmqSocketType::Sub {
+            session.as_socket().set_subscribe(config.topic.unwrap_or_default().as_bytes())?;
         }
         let router = match config.router {
             Some(router) if router == self.handler.identity() => None,

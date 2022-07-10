@@ -25,6 +25,7 @@ pub trait BusId: Copy + Eq + Hash + Debug + Display {
     type Address: ServiceAddress;
 }
 
+#[non_exhaustive]
 pub struct BusConfig<A>
 where
     A: ServiceAddress,
@@ -35,6 +36,7 @@ where
     /// Indicates whether the messages must be queued, or the send function
     /// must fail immediately if the remote point is not available
     pub queued: bool,
+    pub topic: Option<String>,
 }
 
 impl<A> BusConfig<A>
@@ -42,11 +44,38 @@ where
     A: ServiceAddress,
 {
     pub fn with_addr(addr: ServiceAddr, api_type: ZmqSocketType, router: Option<A>) -> Self {
-        Self { api_type, carrier: zeromq::Carrier::Locator(addr), router, queued: false }
+        Self {
+            api_type,
+            carrier: zeromq::Carrier::Locator(addr),
+            router,
+            queued: false,
+            topic: None,
+        }
+    }
+
+    pub fn with_subscription(
+        addr: ServiceAddr,
+        api_type: ZmqSocketType,
+        router: Option<A>,
+        topic: String,
+    ) -> Self {
+        Self {
+            api_type,
+            carrier: zeromq::Carrier::Locator(addr),
+            router,
+            queued: false,
+            topic: Some(topic),
+        }
     }
 
     pub fn with_socket(socket: zmq::Socket, api_type: ZmqSocketType, router: Option<A>) -> Self {
-        Self { api_type, carrier: zeromq::Carrier::Socket(socket), router, queued: false }
+        Self {
+            api_type,
+            carrier: zeromq::Carrier::Socket(socket),
+            router,
+            queued: false,
+            topic: None,
+        }
     }
 }
 
