@@ -20,7 +20,7 @@ use std::{io, thread};
 
 use internet2::addr::{InetSocketAddr, LocalNode, NodeId};
 use internet2::session::noise::FramingProtocol;
-use internet2::session::BrontideSession;
+use internet2::session::{BrontideSession, BrontozaurSession};
 #[cfg(not(target_os = "windows"))]
 use nix::unistd::{fork, ForkResult, Pid};
 
@@ -80,7 +80,7 @@ where
             params.local_id = node_addr.id;
             params.local_socket = Some(node_addr.addr);
 
-            spawner(params, node_addr.addr, threaded, local_node, runtime)?;
+            spawner(params, node_addr.addr, threaded, framing_protocol, local_node, runtime)?;
         }
         PeerSocket::Connect(node_addr) => {
             debug!("Running peer daemon in CONNECT mode");
@@ -117,7 +117,8 @@ where
 fn spawner<Config, Error>(
     mut params: RuntimeParams<Config>,
     inet_addr: InetSocketAddr,
-    threaded_daemons: bool,
+    threaded: bool,
+    framing_protocol: FramingProtocol,
     local_node: LocalNode,
     runtime: fn(connection: PeerConnection, params: RuntimeParams<Config>) -> Result<(), Error>,
 ) -> Result<(), Error>
@@ -146,13 +147,23 @@ where
         let node_sk = local_node.private_key();
         let init = move || {
             debug!("Establishing session with the remote");
-            let session = BrontideSession::with(stream, node_sk, remote_socket_addr.into())
-                .expect("Unable to establish session with the remote peer");
-            let connection = PeerConnection::with(session);
+            let connection = match framing_protocol {
+                FramingProtocol::Brontide => {
+                    let session = BrontideSession::with(stream, node_sk, remote_socket_addr.into())
+                        .expect("Unable to establish session with the remote peer");
+                    PeerConnection::with(session)
+                }
+                FramingProtocol::Brontozaur => {
+                    let session =
+                        BrontozaurSession::with(stream, node_sk, remote_socket_addr.into())
+                            .expect("Unable to establish session with the remote peer");
+                    PeerConnection::with(session)
+                }
+            };
             runtime(connection, child_params)
         };
 
-        if threaded_daemons {
+        if threaded {
             debug!("Spawning child thread");
             let handler =
                 thread::Builder::new().name(format!("peerd-listner<{}>", inet_addr)).spawn(init)?;
@@ -165,10 +176,13 @@ where
             {
                 debug!("Forking child process");
                 if let ForkResult::Parent { child } =
-                unsafe { fork().expect("Unable to fork child process") }
+                    unsafe { fork().expect("Unable to fork child process") }
                 {
                     handlers.push(Handler::Process(child));
-                    debug!("Child forked with pid {}; returning into main listener event loop", child);
+                    debug!(
+                        "Child forked with pid {}; returning into main listener event loop",
+                        child
+                    );
                 } else {
                     init()?;
                     unreachable!("we are in the child process");
