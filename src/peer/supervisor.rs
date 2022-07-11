@@ -138,12 +138,13 @@ where
     loop {
         debug!("Awaiting for incoming connections...");
         let (stream, remote_socket_addr) =
-            listener.accept().expect("Error accepting incpming peer connection");
+            listener.accept().expect("Error accepting incoming peer connection");
         info!("New connection from {}", remote_socket_addr);
 
         params.remote_socket = remote_socket_addr.into();
 
-        let child_params = params.clone();
+        let mut child_params = params.clone();
+        child_params.remote_socket = remote_socket_addr.into();
         let node_sk = local_node.private_key();
         let init = move || {
             debug!("Establishing session with the remote");
@@ -151,12 +152,14 @@ where
                 FramingProtocol::Brontide => {
                     let session = BrontideSession::with(stream, node_sk, remote_socket_addr.into())
                         .expect("Unable to establish session with the remote peer");
+                    child_params.remote_id = Some(session.remote_id());
                     PeerConnection::with(session)
                 }
                 FramingProtocol::Brontozaur => {
                     let session =
                         BrontozaurSession::with(stream, node_sk, remote_socket_addr.into())
                             .expect("Unable to establish session with the remote peer");
+                    child_params.remote_id = Some(session.remote_id());
                     PeerConnection::with(session)
                 }
             };
