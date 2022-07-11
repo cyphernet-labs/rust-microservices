@@ -27,7 +27,7 @@
 
 #[macro_use]
 extern crate amplify;
-#[cfg_attr(feature = "shell", macro_use)]
+#[macro_use]
 extern crate strict_encoding;
 
 #[cfg(feature = "serde")]
