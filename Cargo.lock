@@ -682,9 +682,9 @@ dependencies = [
 
 [[package]]
 name = "inet2_addr"
-version = "0.8.1"
+version = "0.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a53365b64a5e05c8f0169117a28aa9608db615ef5e5a0be66c472699f15ae991"
+checksum = "f1007a4b840c2db58cfb6d1a262c33f1a694383b46bd2eda4054f0d84eb08abd"
 dependencies = [
  "amplify",
  "ed25519-dalek",
@@ -723,9 +723,9 @@ dependencies = [
 
 [[package]]
 name = "internet2"
-version = "0.8.0"
+version = "0.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9984b212582a17c8729750ceb483d31d5982b9dff925f7e15ae1ac725a193a1c"
+checksum = "cdb989d923b9e5d091c57269869975016eef11af1d9670ae475a67e46bde941c"
 dependencies = [
  "amplify",
  "bitcoin_hashes",
@@ -866,7 +866,7 @@ dependencies = [
 
 [[package]]
 name = "microservices"
-version = "0.8.4"
+version = "0.8.10"
 dependencies = [
  "amplify",
  "colored",
