@@ -59,7 +59,7 @@ pub enum LogLevel {
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Debug, Display, Error)]
 #[display(doc_comments)]
-/// Unrecognized value `{0}` for log level type; allowed values are
+/// Unrecognized value `{_0}` for log level type; allowed values are
 /// `error`, `warn`, `info`, `debug`, `trace`
 pub struct LogLevelParseError(String);
 
