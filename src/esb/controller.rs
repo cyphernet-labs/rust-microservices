@@ -239,7 +239,7 @@ where
             let sender = self.endpoints.0.get_mut(&bus_id).expect("must exist, just indexed");
 
             let routed_frame = sender.session.recv_routed_message()?;
-            let request = (&*self.unmarshaller.unmarshall(Cursor::new(routed_frame.msg))?).clone();
+            let request = (*self.unmarshaller.unmarshall(Cursor::new(routed_frame.msg))?).clone();
             let source = B::Address::from(routed_frame.src);
 
             vec.push(PollItem { bus_id, source, request });
@@ -286,7 +286,7 @@ where
             let sender = self.endpoints.0.get_mut(&bus_id).expect("must exist, just indexed");
 
             let routed_frame = sender.session.recv_routed_message()?;
-            let request = (&*self.unmarshaller.unmarshall(Cursor::new(routed_frame.msg))?).clone();
+            let request = (*self.unmarshaller.unmarshall(Cursor::new(routed_frame.msg))?).clone();
             let source = B::Address::from(routed_frame.src);
             let dest = B::Address::from(routed_frame.dst);
 

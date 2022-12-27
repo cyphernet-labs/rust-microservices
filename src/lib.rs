@@ -74,4 +74,4 @@ pub use crate::format::{BinaryFormat, FileFormat, FormatParseError, StructuredFo
 pub use crate::launcher::{DaemonHandle, Launcher, LauncherError};
 
 #[cfg(feature = "zmq")]
-pub static ZMQ_CONTEXT: Lazy<zmq::Context> = Lazy::new(|| zmq::Context::new());
+pub static ZMQ_CONTEXT: Lazy<zmq::Context> = Lazy::new(zmq::Context::new);

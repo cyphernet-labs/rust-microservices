@@ -65,7 +65,7 @@ where
             .ok_or_else(|| ServerError::UnknownEndpoint(endpoint.to_string()))?;
         session.send_raw_message(&data)?;
         let raw = session.recv_raw_message()?;
-        let reply = self.unmarshaller.unmarshall(Cursor::new(raw))?;
-        Ok((&*reply).clone())
+        let reply = (*self.unmarshaller.unmarshall(Cursor::new(raw))?).clone();
+        Ok(reply)
     }
 }

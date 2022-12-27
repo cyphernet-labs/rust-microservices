@@ -12,7 +12,6 @@
 // along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-use std::convert::TryFrom;
 use std::fmt::Debug;
 use std::net::{SocketAddr, TcpListener};
 use std::thread::JoinHandle;
@@ -130,8 +129,7 @@ where
 
     info!("Binding TCP socket {}", socket_addr);
     let listener =
-        TcpListener::bind(SocketAddr::try_from(socket_addr).expect("Tor is not yet supported"))
-            .expect("Unable to bind to Lightning network peer socket");
+        TcpListener::bind(socket_addr).expect("Unable to bind to Lightning network peer socket");
 
     info!("Running TCP listener event loop");
     loop {
