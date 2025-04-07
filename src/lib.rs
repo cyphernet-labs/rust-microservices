@@ -5,8 +5,8 @@
 // Written in 2022-2025 by
 //     Dr. Maxim Orlovsky <orlovsky@cyphernet.org>
 //
-// Copyright (C) 2022-2025 Cyphernet Labs, 
-//                         Institute for Distributed and Cognitive Systems, 
+// Copyright (C) 2022-2025 Cyphernet Labs,
+//                         Institute for Distributed and Cognitive Systems,
 //                         Lugano, Switzerland
 // All rights reserved
 //
@@ -24,5 +24,8 @@
 
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 
-#[macro_use]
-extern crate amplify;
+mod uservice;
+mod uthread;
+
+pub use uservice::{UError, UErrorMsg, UErrorSender, UResponder, UResult, USender, UService};
+pub use uthread::UThread;
