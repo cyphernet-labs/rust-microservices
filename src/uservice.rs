@@ -5,10 +5,7 @@
 // Written in 2022-2025 by
 //     Dr. Maxim Orlovsky <orlovsky@cyphernet.org>
 //
-// Copyright (C) 2022-2025 Cyphernet Labs,
-//                         Institute for Distributed and Cognitive Systems,
-//                         Lugano, Switzerland
-// All rights reserved
+// Copyright (C) 2022-2025 Cyphernet Labs, InDCS, Switzerland. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -72,10 +69,7 @@ pub trait UService: Send + 'static {
     fn error_brief(&self, err: impl Display) { self.error_sender().report_brief(err.to_string()) }
 
     fn error_sender(&self) -> UErrorSender {
-        UErrorSender {
-            sender: self.monitor().cloned(),
-            service_name: Self::NAME,
-        }
+        UErrorSender { sender: self.monitor().cloned(), service_name: Self::NAME }
     }
 
     fn set_self_sender(&mut self, _sender: USender<Self::Msg>) {
@@ -107,10 +101,7 @@ impl UErrorSender {
                 return;
             };
             if sender
-                .send(UErrorMsg {
-                    service: self.service_name.to_string(),
-                    error,
-                })
+                .send(UErrorMsg { service: self.service_name.to_string(), error })
                 .is_err()
             {
                 log::error!(target: self.service_name, "Broken monitor channel");
@@ -137,10 +128,12 @@ impl<Msg> USender<Msg> {
     }
 
     pub fn send(&self, msg: Msg) -> Result<(), SendError<Msg>> {
-        self.0.send(UMsg::Msg(msg)).map_err(|SendError(msg)| match msg {
-            UMsg::Msg(msg) => SendError(msg),
-            UMsg::Terminate => unreachable!(),
-        })
+        self.0
+            .send(UMsg::Msg(msg))
+            .map_err(|SendError(msg)| match msg {
+                UMsg::Msg(msg) => SendError(msg),
+                UMsg::Terminate => unreachable!(),
+            })
     }
 
     pub fn try_send(&self, msg: Msg) -> Result<(), TrySendError<Msg>> {
@@ -154,11 +147,15 @@ impl<Msg> USender<Msg> {
     }
 
     pub fn send_timeout(&self, msg: Msg, timeout: Duration) -> Result<(), SendTimeoutError<Msg>> {
-        self.0.send_timeout(UMsg::Msg(msg), timeout).map_err(Self::convert_timeout_error)
+        self.0
+            .send_timeout(UMsg::Msg(msg), timeout)
+            .map_err(Self::convert_timeout_error)
     }
 
     pub fn send_deadline(&self, msg: Msg, deadline: Instant) -> Result<(), SendTimeoutError<Msg>> {
-        self.0.send_deadline(UMsg::Msg(msg), deadline).map_err(Self::convert_timeout_error)
+        self.0
+            .send_deadline(UMsg::Msg(msg), deadline)
+            .map_err(Self::convert_timeout_error)
     }
 
     #[inline]

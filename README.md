@@ -1,3 +1,3 @@
-# rust-microservices
+# Microservices Rust Framework
 
-Internet2 microservices framework
+Simplifies creation of microservices which use channels instead of Rust async runtime.

@@ -5,10 +5,7 @@
 // Written in 2022-2025 by
 //     Dr. Maxim Orlovsky <orlovsky@cyphernet.org>
 //
-// Copyright (C) 2022-2025 Cyphernet Labs,
-//                         Institute for Distributed and Cognitive Systems,
-//                         Lugano, Switzerland
-// All rights reserved
+// Copyright (C) 2022-2025 Cyphernet Labs, InDCS, Switzerland. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -96,10 +93,7 @@ impl<S: UService> UThread<S> {
             log::info!(target: S::NAME, "thread is stopped");
         });
 
-        Self {
-            thread: Some(thread),
-            sender,
-        }
+        Self { thread: Some(thread), sender }
     }
 
     pub fn sender(&self) -> USender<S::Msg> { USender(self.sender.clone()) }
